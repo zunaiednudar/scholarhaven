@@ -1,0 +1,53 @@
+name: ScholarHaven CI
+
+on:
+  push:
+    branches: [ main, develop ]
+
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    # Environment variables setup (Accessible to all steps in this job)
+    env:
+      DB_USERNAME: ${{ secrets.DB_USERNAME }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_HOST: ${{ secrets.DB_HOST }}
+      DB_PORT: ${{ secrets.DB_PORT }}
+
+    # Define additional containers the job can use
+    services:
+      # For integration tests to run queries
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: ${{ secrets.DB_USERNAME }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.DB_NAME }}
+        ports:
+          - 5432:5432
+        # Prevent tests from starting before DB is ready
+        options: >-
+          --health-cmd "pg_isready -U ${{ secrets.DB_USERNAME }}"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      # Code checkout to build and run tests
+      - uses: actions/checkout@v3
+
+      # Set up Java since CI runner doesn't come with the right Java by default
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # Build & run unit + integration tests
+      - name: Build and Test
+        run: ./mvnw clean verify
