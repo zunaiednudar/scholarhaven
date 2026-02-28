@@ -9,6 +9,6 @@ spring:
     # Convert object into SQL
     hibernate:
       # Update schema if needed when the app starts
-      ddl-auto: update
+      ddl-auto: validate
     # Print all generated SQL queries in the console for debugging
     show-sql: true
