@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:scholarhaven}
+    username: ${DB_USERNAME:zunaied}
+    password: ${DB_PASSWORD:zunaied}
+
+  # Java Persistence API - Works with relational databases using Java objects instead of raw SQL
+  jpa:
+    # Convert object into SQL
+    hibernate:
+      # Update schema if needed when the app starts
+      ddl-auto: validate
+    # Print all generated SQL queries in the console for debugging
+    show-sql: true

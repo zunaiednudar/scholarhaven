@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  db:
+    image: 'postgres:18'
+    container_name: scholarhaven-db
+    environment:
+      POSTGRES_DB: ${DB_NAME:scholarhaven}
+      POSTGRES_USER: ${DB_USERNAME:zunaied}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:zunaied}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    environment:
+      DB_NAME: ${DB_NAME:scholarhaven}
+      DB_USERNAME: ${DB_USERNAME:zunaied}
+      DB_PASSWORD: ${DB_PASSWORD:zunaied}
+      DB_HOST: db
+      DB_PORT: 5432
+    depends_on:
+      - db
+    ports:
+      - "8080:8080"
+
+volumes:
+  db_data:
