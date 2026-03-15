@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Admin Dashboard - ScholarHaven</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
+</head>
+<body class="bg-gray-100 text-gray-900">
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold">Admin Dashboard</h1>
+            <p class="text-sm text-gray-600">Manage users and book listings (approve/reject/delete).</p>
+        </div>
+        <a href="/logout" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-800">Logout</a>
+    </div>
+
+    <!-- Users -->
+    <div class="bg-white rounded-xl shadow p-4 mb-8">
+        <h2 class="text-xl font-semibold mb-3">Users</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead>
+                <tr class="bg-gray-100 text-left">
+                    <th class="px-3 py-2">ID</th>
+                    <th class="px-3 py-2">Username</th>
+                    <th class="px-3 py-2">Email</th>
+                    <th class="px-3 py-2">Enabled</th>
+                    <th class="px-3 py-2">Roles</th>
+                    <th class="px-3 py-2">Actions</th>
+                </tr>
+                </thead>
+                <tbody id="usersTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pending books -->
+    <div class="bg-white rounded-xl shadow p-4">
+        <h2 class="text-xl font-semibold mb-3">Pending Book Approvals</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead>
+                <tr class="bg-gray-100 text-left">
+                    <th class="px-3 py-2">ID</th>
+                    <th class="px-3 py-2">Title</th>
+                    <th class="px-3 py-2">Seller</th>
+                    <th class="px-3 py-2">Price</th>
+                    <th class="px-3 py-2">Status</th>
+                    <th class="px-3 py-2">Actions</th>
+                </tr>
+                </thead>
+                <tbody id="pendingBooksTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function fetchUsers() {
+        try {
+            const resp = await fetch('/api/admin/users', { method: 'GET' });
+            if (!resp.ok) throw new Error('Failed to load users');
+            const users = await resp.json();
+            const body = document.getElementById('usersTableBody');
+            body.innerHTML = '';
+            users.forEach(user => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b';
+                tr.innerHTML = `
+                    <td class="px-3 py-2">${user.id}</td>
+                    <td class="px-3 py-2">${user.username}</td>
+                    <td class="px-3 py-2">${user.email}</td>
+                    <td class="px-3 py-2">${user.enabled ? 'Yes' : 'No'}</td>
+                    <td class="px-3 py-2">${user.roles.join(', ')}</td>
+                    <td class="px-3 py-2 space-x-1">
+                        <button onclick="enableUser(${user.id})" class="bg-green-500 text-white px-2 py-1 rounded">Enable</button>
+                        <button onclick="disableUser(${user.id})" class="bg-yellow-500 text-white px-2 py-1 rounded">Disable</button>
+                        <button onclick="deleteUser(${user.id})" class="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
+                    </td>`;
+                body.appendChild(tr);
+            });
+        } catch (err) {
+            console.error(err);
+            alert('Error loading users. Check console for details.');
+        }
+    }
+
+    async function fetchPendingBooks() {
+        try {
+            const resp = await fetch('/api/books/admin/pending', { method: 'GET' });
+            if (!resp.ok) throw new Error('Failed to load pending books');
+            const books = await resp.json();
+            const body = document.getElementById('pendingBooksTableBody');
+            body.innerHTML = '';
+            books.forEach(book => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b';
+                tr.innerHTML = `
+                    <td class="px-3 py-2">${book.id}</td>
+                    <td class="px-3 py-2">${book.title}</td>
+                    <td class="px-3 py-2">${book.sellerName || 'N/A'}</td>
+                    <td class="px-3 py-2">${book.originalPrice}</td>
+                    <td class="px-3 py-2">${book.status}</td>
+                    <td class="px-3 py-2 space-x-1">
+                        <button onclick="approveBook(${book.id})" class="bg-green-500 text-white px-2 py-1 rounded">Approve</button>
+                        <button onclick="rejectBook(${book.id})" class="bg-red-500 text-white px-2 py-1 rounded">Reject</button>
+                      
+                    </td>`;
+                body.appendChild(tr);
+            });
+        } catch (err) {
+            console.error(err);
+            alert('Error loading pending books. Check console for details.');
+        }
+    }
+
+    async function enableUser(id) {
+        await fetch(`/api/admin/users/${id}/enable`, { method: 'POST' });
+        fetchUsers();
+    }
+
+    async function disableUser(id) {
+        await fetch(`/api/admin/users/${id}/disable`, { method: 'POST' });
+        fetchUsers();
+    }
+
+    async function deleteUser(id) {
+        if (!confirm('Delete user and all their books?')) return;
+        await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
+        await fetchUsers();
+    }
+
+    async function approveBook(id) {
+        await fetch(`/api/books/admin/${id}/approve`, { method: 'POST' });
+        fetchPendingBooks();
+    }
+
+    async function rejectBook(id) {
+        await fetch(`/api/books/admin/${id}/reject`, { method: 'POST' });
+        fetchPendingBooks();
+    }
+
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchUsers();
+        fetchPendingBooks();
+    });
+</script>
+</body>
+</html>
