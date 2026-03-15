@@ -7,26 +7,67 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@200..700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .hover-scale {
+            transition: transform 0.2s ease-in-out;
+        }
+        .hover-scale:hover {
+            transform: scale(1.05);
+        }
+        .group:hover .dropdown-content {
+            display: block;
+        }
+        .dropdown-content {
+            display: none;
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease-out;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
 </head>
-<body class="font-oswald bg-gray-50">
+<body class="font-sans bg-gray-50">
 
-<div class="bg-red-600 text-white text-center py-2 text-sm">
+<!-- Top Banner -->
+<div class="bg-gradient-to-r from-red-600 to-red-800 text-white text-center py-2 text-sm">
     <i class="fas fa-truck mr-2"></i> Free Shipping on orders over $50
 </div>
 
-<nav class="bg-white shadow-md sticky top-0 z-50">
+<!-- Navigation -->
+<nav class="bg-white shadow-lg sticky top-0 z-50">
     <div class="container mx-auto px-4">
         <div class="flex justify-between items-center h-20">
+            <!-- Logo -->
             <div class="flex items-center space-x-3">
-                <img src="/logo-scholarhaven.jpg" alt="ScholarHaven" class="h-12 w-12 rounded-full">
-                <span class="text-2xl font-bold text-red-600">ScholarHaven</span>
+                <div class="h-12 w-12 rounded-full bg-gradient-to-r from-red-600 to-red-800 flex items-center justify-center text-white font-bold text-xl ring-2 ring-red-200">
+                   <img src="/logo-scholarhaven.jpg" alt="ScholarHaven Logo" class="h-full w-full object-cover rounded-full">     
+                </div>
+                <span class="text-2xl font-bold bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent">ScholarHaven</span>
             </div>
 
+            <!-- Search Bar -->
             <div class="flex-1 max-w-xl mx-8">
                 <form action="/books" method="get" class="flex">
-                    <input type="text" name="q" placeholder="Search by title or author..."
+                    <input type="hidden" name="categoryId" th:value="${currentCategory}" />
+                    <input type="text" name="q" th:value="${searchQuery}" placeholder="Search by title or author..."
                            class="w-full px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-red-400">
                     <button type="submit" class="bg-red-600 text-white px-6 rounded-r-lg hover:bg-red-700">
                         <i class="fas fa-search"></i>
@@ -34,212 +75,338 @@
                 </form>
             </div>
 
-            <div class="flex items-center space-x-6">
+            <!-- Right Icons with Dynamic Menu -->
+            <div class="flex items-center space-x-6" id="userMenu">
+                <!-- Cart Icon (visible to all) -->
                 <a href="/cart" class="text-gray-700 hover:text-red-600 relative">
                     <i class="fas fa-shopping-cart text-xl"></i>
                     <span class="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
                 </a>
-                <a href="/wishlist" class="text-gray-700 hover:text-red-600">
-                    <i class="fas fa-heart text-xl"></i>
-                </a>
-                <div class="relative group">
-                    <button class="flex items-center space-x-1 text-gray-700 hover:text-red-600">
-                        <i class="fas fa-user-circle text-2xl"></i>
-                        <i class="fas fa-chevron-down text-xs"></i>
-                    </button>
-                    <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl hidden group-hover:block">
-                        <a href="/login" class="block px-4 py-2 hover:bg-gray-100">Login</a>
-                        <a href="/register" class="block px-4 py-2 hover:bg-gray-100">Register</a>
-                        <hr>
-                        <a href="/my-books" class="block px-4 py-2 hover:bg-gray-100">My Books</a>
-                        <a href="/add-book" class="block px-4 py-2 hover:bg-gray-100">Sell Books</a>
-                    </div>
-                </div>
+
+                    <!-- Dynamic User Menu Container -->
+                <div id="user-menu-container"></div>
             </div>
         </div>
 
-        <div class="flex space-x-8 py-3 border-t">
-            <a href="/" class="text-red-600 font-medium">Home</a>
+        <!-- Category Navigation -->
+        <div class="flex space-x-8 py-3 border-t overflow-x-auto hide-scrollbar" id="categoryNav">
+            <a href="/" class="text-red-600 font-medium hover:text-red-800">Home</a>
             <a href="/books" class="text-gray-700 hover:text-red-600">All Books</a>
-            <a href="/books/featured" class="text-gray-700 hover:text-red-600">Featured</a>
-            <a href="/books/new-arrivals" class="text-gray-700 hover:text-red-600">New Arrivals</a>
-            <a href="/add-book" class="text-gray-700 hover:text-red-600">Sell Books</a>
+            <!-- Sell Books link - will be shown/hidden by JavaScript -->
+            <a href="/my-books-dashboard" id="sellBooksLink" class="text-gray-700 hover:text-red-600" style="display: none;">Sell Books</a>
         </div>
     </div>
 </nav>
 
-<div class="relative bg-gradient-to-r from-red-600 to-red-800 text-white">
-    <div class="container mx-auto px-4 py-16">
+<!-- Hero Section -->
+<div class="relative bg-gradient-to-r from-red-600 via-red-700 to-red-800 text-white overflow-hidden">
+    <div class="absolute inset-0 bg-black opacity-10"></div>
+    <div class="absolute -right-20 -top-20 w-64 h-64 bg-white opacity-10 rounded-full"></div>
+    <div class="absolute -left-20 -bottom-20 w-96 h-96 bg-white opacity-10 rounded-full"></div>
+
+    <div class="container mx-auto px-4 py-16 relative">
         <div class="grid md:grid-cols-2 gap-8 items-center">
-            <div>
-                <h1 class="text-5xl font-bold mb-4">Find Your Next<br>Favorite Book</h1>
-                <p class="text-xl mb-8">Thousands of new and used books at amazing prices. Buy, sell, or trade with fellow book lovers.</p>
-                <div class="space-x-4">
-                    <a href="/books" class="bg-white text-red-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 inline-block">
+            <div class="animate-fade-in-up">
+                <h1 class="text-5xl font-bold mb-4 leading-tight">Find Your Next<br>Favorite Book</h1>
+                <p class="text-xl mb-8 text-red-100">Thousands of new and used books at amazing prices. Buy, sell, or trade with fellow book lovers.</p>
+                <div class="space-x-4" id="hero-cta-container">
+                    <a href="/books" class="bg-white text-red-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 hover:scale-105 transition-all inline-block shadow-lg mr-4">
                         Browse Books
                     </a>
-                    <a href="/add-book" class="border-2 border-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-red-600 inline-block">
-                        Start Selling
+                    <a href="/register" class="bg-red-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-red-700 hover:scale-105 transition-all inline-block shadow-lg">
+                        Join Now
                     </a>
                 </div>
             </div>
             <div class="hidden md:block">
                 <img src="https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80"
-                     alt="Books" class="rounded-lg shadow-2xl">
+                     alt="Books" class="rounded-lg shadow-2xl hover:scale-105 transition-transform duration-500">
             </div>
         </div>
     </div>
 </div>
 
-<div class="container mx-auto px-4 py-12">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white p-6 rounded-lg shadow text-center">
-            <i class="fas fa-truck-fast text-4xl text-red-600 mb-4"></i>
+<!-- Features -->
+<div class="container mx-auto px-4 py-16">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="bg-white p-8 rounded-xl shadow-lg hover-scale text-center">
+            <div class="bg-red-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-truck-fast text-4xl text-red-600"></i>
+            </div>
             <h3 class="font-bold text-xl mb-2">Fast Delivery</h3>
             <p class="text-gray-600">Get your books delivered within 3-5 business days</p>
         </div>
-        <div class="bg-white p-6 rounded-lg shadow text-center">
-            <i class="fas fa-tag text-4xl text-red-600 mb-4"></i>
+        <div class="bg-white p-8 rounded-xl shadow-lg hover-scale text-center">
+            <div class="bg-red-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-tag text-4xl text-red-600"></i>
+            </div>
             <h3 class="font-bold text-xl mb-2">Best Prices</h3>
             <p class="text-gray-600">Up to 50% off on used books and bulk purchases</p>
         </div>
-        <div class="bg-white p-6 rounded-lg shadow text-center">
-            <i class="fas fa-shield-alt text-4xl text-red-600 mb-4"></i>
+        <div class="bg-white p-8 rounded-xl shadow-lg hover-scale text-center">
+            <div class="bg-red-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-shield-alt text-4xl text-red-600"></i>
+            </div>
             <h3 class="font-bold text-xl mb-2">Secure Payment</h3>
             <p class="text-gray-600">100% secure payment with multiple options</p>
         </div>
     </div>
 </div>
 
-<div class="container mx-auto px-4 py-12">
-    <h2 class="text-3xl font-bold mb-8">Featured Books</h2>
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div th:each="book : ${featuredBooks}" class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
-            <img th:src="${book.coverImage ?: 'https://via.placeholder.com/200x250'}"
-                 alt="Book cover" class="w-full h-48 object-cover">
-            <div class="p-4">
-                <h3 class="font-bold text-lg mb-1" th:text="${book.title}">Book Title</h3>
-                <p class="text-gray-600 text-sm mb-2" th:text="${book.author}">Author Name</p>
-                <div class="flex items-center mb-2">
-                    <span class="text-yellow-400">★★★★★</span>
-                    <span class="text-sm text-gray-500 ml-2">(24)</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <div>
-                        <span class="text-red-600 font-bold text-xl" th:text="'$' + ${book.finalPrice}">$29.99</span>
-                        <span class="text-sm text-gray-400 line-through ml-2" th:text="'$' + ${book.originalPrice}" th:if="${book.finalPrice < book.originalPrice}">$39.99</span>
-                    </div>
-                    <a th:href="@{'/books/' + ${book.id}}" class="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700">
-                        Buy Now
-                    </a>
-                </div>
+<!-- Categories Section -->
+<div class="container mx-auto px-4 py-16">
+    <h2 class="text-3xl font-bold mb-12 text-center relative">
+        <span class="bg-white px-4 relative z-10">Shop by Category</span>
+        <div class="absolute top-1/2 left-0 w-full h-0.5 bg-gray-200 -z-0"></div>
+    </h2>
+
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div th:each="cat : ${categories}"
+             th:onclick="'window.location.href=\'/books?categoryId=' + ${cat.id} + '\''"
+             class="bg-white p-6 rounded-xl shadow hover:shadow-xl transition-all duration-300 text-center cursor-pointer group">
+            <div class="w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                <i class="fas fa-book-open text-3xl text-red-600"></i>
             </div>
+            <h3 class="font-semibold text-lg" th:text="${cat.name}">Fiction</h3>
+            <p class="text-sm text-gray-500" th:text="${cat.books?.size() ?: 0} + ' books'">25 books</p>
         </div>
     </div>
 </div>
 
-<div class="bg-gray-100 py-12">
-    <div class="container mx-auto px-4">
-        <h2 class="text-3xl font-bold mb-8 text-center">What Our Customers Say</h2>
-        <div class="grid md:grid-cols-3 gap-6">
-            <div class="bg-white p-6 rounded-lg shadow">
-                <div class="flex items-center mb-4">
-                    <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Customer" class="w-12 h-12 rounded-full mr-4">
-                    <div>
-                        <h4 class="font-bold">Miss Jannat Priya</h4>
-                        <p class="text-sm text-gray-500">Student (BUP)</p>
-                    </div>
+<!-- Testimonials -->
+<div class="container mx-auto px-4 py-16 bg-gray-50">
+    <h2 class="text-3xl font-bold mb-12 text-center">What Our Customers Say</h2>
+
+    <div class="grid md:grid-cols-3 gap-8">
+        <div class="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all">
+            <div class="flex items-center mb-4">
+                <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Customer" class="w-14 h-14 rounded-full mr-4 ring-2 ring-red-200">
+                <div>
+                    <h4 class="font-bold text-lg">Miss Jannat Priya</h4>
+                    <p class="text-sm text-gray-500">Student (BUP)</p>
                 </div>
-                <p class="text-gray-600 italic">"I got the best book delivery ever! The books were so cleanly printed and the delivery system is so cool. My friends and faculty members appreciated it. Thank you for such precious books with cheapest price!"</p>
-                <div class="text-yellow-400 mt-2">★★★★★</div>
             </div>
-            <div class="bg-white p-6 rounded-lg shadow">
-                <div class="flex items-center mb-4">
-                    <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Customer" class="w-12 h-12 rounded-full mr-4">
-                    <div>
-                        <h4 class="font-bold">Rafiq Ahmed</h4>
-                        <p class="text-sm text-gray-500">University Teacher</p>
-                    </div>
+            <p class="text-gray-600 italic mb-3">"I got the best book delivery ever! The books were so cleanly printed and the delivery system is so cool. My friends and faculty members appreciated it."</p>
+            <div class="text-yellow-400 text-lg">★★★★★</div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all">
+            <div class="flex items-center mb-4">
+                <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Customer" class="w-14 h-14 rounded-full mr-4 ring-2 ring-red-200">
+                <div>
+                    <h4 class="font-bold text-lg">Rafiq Ahmed</h4>
+                    <p class="text-sm text-gray-500">University Teacher</p>
                 </div>
-                <p class="text-gray-600 italic">"Their behavior is too good! The packing style is perfect and they sell at very reasonable prices. If they continue like this, people will definitely love them."</p>
-                <div class="text-yellow-400 mt-2">★★★★★</div>
             </div>
-            <div class="bg-white p-6 rounded-lg shadow">
-                <div class="flex items-center mb-4">
-                    <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Customer" class="w-12 h-12 rounded-full mr-4">
-                    <div>
-                        <h4 class="font-bold">Tasnim Rahman</h4>
-                        <p class="text-sm text-gray-500">Book Collector</p>
-                    </div>
+            <p class="text-gray-600 italic mb-3">"Their behavior is too good! The packing style is perfect and they sell at very reasonable prices. If they continue like this, people will definitely love them."</p>
+            <div class="text-yellow-400 text-lg">★★★★★</div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all">
+            <div class="flex items-center mb-4">
+                <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Customer" class="w-14 h-14 rounded-full mr-4 ring-2 ring-red-200">
+                <div>
+                    <h4 class="font-bold text-lg">Tasnim Rahman</h4>
+                    <p class="text-sm text-gray-500">Book Collector</p>
                 </div>
-                <p class="text-gray-600 italic">"Best online book store! Found all my academic books here at reasonable prices. The discount offers are amazing. Highly recommended!"</p>
-                <div class="text-yellow-400 mt-2">★★★★★</div>
             </div>
+            <p class="text-gray-600 italic mb-3">"Best online book store! Found all my academic books here at reasonable prices. The discount offers are amazing. Highly recommended!"</p>
+            <div class="text-yellow-400 text-lg">★★★★★</div>
         </div>
     </div>
 </div>
 
-<div class="bg-red-600 text-white py-12">
+<!-- Newsletter -->
+<div class="bg-gradient-to-r from-red-600 to-red-800 text-white py-16">
     <div class="container mx-auto px-4 text-center">
         <h2 class="text-3xl font-bold mb-4">Subscribe to Our Newsletter</h2>
-        <p class="mb-6">Get updates about new books and special offers</p>
+        <p class="mb-8 text-red-100">Get updates about new books and special offers</p>
         <form class="max-w-md mx-auto flex">
             <input type="email" placeholder="Your email address"
-                   class="flex-1 px-4 py-3 rounded-l-lg text-gray-900 focus:outline-none">
-            <button type="submit" class="bg-red-800 px-6 py-3 rounded-r-lg hover:bg-red-900">
+                   class="flex-1 px-6 py-4 rounded-l-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-400">
+            <button type="submit" class="bg-red-900 px-8 py-4 rounded-r-lg hover:bg-red-950 transition-colors font-semibold">
                 Subscribe
             </button>
         </form>
     </div>
 </div>
 
-<footer class="bg-gray-900 text-white pt-12 pb-6">
+<!-- Footer -->
+<footer class="bg-gray-900 text-white pt-16 pb-8">
     <div class="container mx-auto px-4">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
             <div>
-                <div class="flex items-center space-x-3 mb-4">
-                    <img src="/logo-scholarhaven.jpg" alt="ScholarHaven" class="h-10 w-10 rounded-full">
-                    <span class="text-xl font-bold text-red-500">ScholarHaven</span>
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="h-12 w-12 rounded-full bg-gradient-to-r from-red-500 to-red-700 flex items-center justify-center text-white font-bold text-xl ring-2 ring-red-500">
+                        SH
+                    </div>
+                    <span class="text-2xl font-bold text-red-500">ScholarHaven</span>
                 </div>
-                <p class="text-gray-400">Your trusted marketplace for buying and selling books since 2024.</p>
+                <p class="text-gray-400 leading-relaxed">Your trusted marketplace for buying and selling books since 2024.</p>
             </div>
+
             <div>
-                <h4 class="font-bold mb-4">Quick Links</h4>
-                <ul class="space-y-2 text-gray-400">
-                    <li><a href="/about" class="hover:text-red-500">About Us</a></li>
-                    <li><a href="/contact" class="hover:text-red-500">Contact</a></li>
-                    <li><a href="/terms" class="hover:text-red-500">Terms & Conditions</a></li>
-                    <li><a href="/privacy" class="hover:text-red-500">Privacy Policy</a></li>
+                <h4 class="font-bold text-lg mb-6">Quick Links</h4>
+                <ul class="space-y-3 text-gray-400">
+                    <li><a href="/about" class="hover:text-red-500 transition-colors flex items-center"><i class="fas fa-chevron-right mr-2 text-xs"></i>About Us</a></li>
+                    <li><a href="/contact" class="hover:text-red-500 transition-colors flex items-center"><i class="fas fa-chevron-right mr-2 text-xs"></i>Contact</a></li>
+                    <li><a href="/terms" class="hover:text-red-500 transition-colors flex items-center"><i class="fas fa-chevron-right mr-2 text-xs"></i>Terms & Conditions</a></li>
+                    <li><a href="/privacy" class="hover:text-red-500 transition-colors flex items-center"><i class="fas fa-chevron-right mr-2 text-xs"></i>Privacy Policy</a></li>
                 </ul>
             </div>
+
             <div>
-                <h4 class="font-bold mb-4">Categories</h4>
-                <ul class="space-y-2 text-gray-400">
-                    <li><a href="/books?cat=fiction">Fiction</a></li>
-                    <li><a href="/books?cat=academic">Academic</a></li>
-                    <li><a href="/books?cat=children">Children's Books</a></li>
-                    <li><a href="/books?cat=textbook">Textbooks</a></li>
+                <h4 class="font-bold text-lg mb-6">Categories</h4>
+                <ul class="space-y-3 text-gray-400">
+                    <li th:each="cat : ${categories}">
+                        <a th:href="@{'/books?(categoryId=${cat.id})'}"
+                           class="hover:text-red-500 transition-colors flex items-center">
+                            <i class="fas fa-chevron-right mr-2 text-xs"></i>
+                            <span th:text="${cat.name}">Fiction</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
+
             <div>
-                <h4 class="font-bold mb-4">Contact Info</h4>
-                <ul class="space-y-2 text-gray-400">
-                    <li><i class="fas fa-map-marker-alt mr-2"></i> Dhaka, Bangladesh</li>
-                    <li><i class="fas fa-phone mr-2"></i> +880 1234-567890</li>
-                    <li><i class="fas fa-envelope mr-2"></i> support@scholarhaven.com</li>
+                <h4 class="font-bold text-lg mb-6">Contact Info</h4>
+                <ul class="space-y-4 text-gray-400">
+                    <li class="flex items-start">
+                        <i class="fas fa-map-marker-alt mt-1 mr-3 text-red-500"></i>
+                        <span>Dhaka, Bangladesh</span>
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-phone mr-3 text-red-500"></i>
+                        <span>+880 1234-567890</span>
+                    </li>
+                    <li class="flex items-center">
+                        <i class="fas fa-envelope mr-3 text-red-500"></i>
+                        <span>support@scholarhaven.com</span>
+                    </li>
                 </ul>
-                <div class="flex space-x-4 mt-4">
-                    <a href="#" class="text-2xl hover:text-red-500"><i class="fab fa-facebook"></i></a>
-                    <a href="#" class="text-2xl hover:text-red-500"><i class="fab fa-twitter"></i></a>
-                    <a href="#" class="text-2xl hover:text-red-500"><i class="fab fa-instagram"></i></a>
-                    <a href="#" class="text-2xl hover:text-red-500"><i class="fab fa-linkedin"></i></a>
+                <div class="flex space-x-4 mt-6">
+                    <a href="#" class="text-2xl hover:text-red-500 transition-colors"><i class="fab fa-facebook"></i></a>
+                    <a href="#" class="text-2xl hover:text-red-500 transition-colors"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="text-2xl hover:text-red-500 transition-colors"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="text-2xl hover:text-red-500 transition-colors"><i class="fab fa-linkedin"></i></a>
                 </div>
             </div>
         </div>
-        <hr class="border-gray-800 my-6">
-        <p class="text-center text-gray-500">&copy; 2024 ScholarHaven. All rights reserved.</p>
+
+        <hr class="border-gray-800 my-8">
+
+        <p class="text-center text-gray-500 text-sm">&copy; 2024 ScholarHaven. All rights reserved. Made with <i class="fas fa-heart text-red-500 mx-1"></i> for book lovers</p>
     </div>
 </footer>
+
+<!-- Authentication Script -->
+<script>
+    (function() {
+        const token = localStorage.getItem('jwt');
+        const username = localStorage.getItem('username') || 'User';
+        const userMenuContainer = document.getElementById('user-menu-container');
+        const heroCtaContainer = document.getElementById('hero-cta-container');
+        const sellBooksLink = document.getElementById('sellBooksLink');
+
+        if (token) {
+            document.cookie = `jwt=${token}; path=/; max-age=86400; SameSite=Lax`;
+
+            fetch('/api/user/roles', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            })
+            .then(res => res.json())
+            .then(data => {
+                const isSeller = data.roles.includes('SELLER');
+
+                let menuHtml = `
+                    <div class="relative group">
+                        <button class="flex items-center space-x-1 text-gray-700 hover:text-red-600">
+                            <i class="fas fa-user-circle text-2xl"></i>
+                            <span class="font-medium">${username}</span>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl hidden group-hover:block">
+                            <div class="px-4 py-2 border-b">
+                                <p class="text-sm text-gray-500">Signed in as</p>
+                                <p class="font-semibold">${username}</p>
+                            </div>
+                            <a href="/profile" class="block px-4 py-2 hover:bg-gray-100">Profile</a>
+                            <a href="/my-orders" class="block px-4 py-2 hover:bg-gray-100">My Orders</a>
+                `;
+
+                if (isSeller) {
+                    menuHtml += `
+                            <a href="/my-books-dashboard" class="block px-4 py-2 hover:bg-gray-100">Sell Books</a>
+                    `;
+                    if (sellBooksLink) sellBooksLink.style.display = 'inline-block';
+                } else {
+                    menuHtml += `
+                            <a href="/seller/become-seller" class="block px-4 py-2 bg-yellow-50 text-yellow-700 hover:bg-yellow-100">Become a Seller</a>
+                    `;
+                    if (sellBooksLink) sellBooksLink.style.display = 'none';
+                }
+
+                menuHtml += `
+                            <hr>
+                            <a href="#" onclick="logout()" class="block px-4 py-2 text-red-600 hover:bg-gray-100">Logout</a>
+                        </div>
+                    </div>
+                `;
+
+                userMenuContainer.innerHTML = menuHtml;
+
+                if (heroCtaContainer) {
+                    if (isSeller) {
+                        heroCtaContainer.innerHTML = `
+                            <a href="/books" class="bg-white text-red-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 hover:scale-105 transition-all inline-block shadow-lg mr-4">
+                                Browse Books
+                            </a>
+                            <a href="/my-books-dashboard" class="bg-red-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-red-700 hover:scale-105 transition-all inline-block shadow-lg">
+                                <i class="fas fa-store mr-2"></i>Sell Books
+                            </a>
+                        `;
+                    } else {
+                        heroCtaContainer.innerHTML = `
+                            <a href="/books" class="bg-white text-red-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 hover:scale-105 transition-all inline-block shadow-lg mr-4">
+                                Browse Books
+                            </a>
+                            <a href="/seller/become-seller" class="bg-yellow-500 text-white px-8 py-3 rounded-lg font-semibold hover:bg-yellow-600 hover:scale-105 transition-all inline-block shadow-lg">
+                                <i class="fas fa-store mr-2"></i>Become a Seller
+                            </a>
+                        `;
+                    }
+                }
+            });
+        } else {
+            userMenuContainer.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <a href="/login" class="text-gray-700 hover:text-red-600 px-3 py-2">Login</a>
+                    <a href="/register" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Register</a>
+                </div>
+            `;
+
+            if (heroCtaContainer) {
+                heroCtaContainer.innerHTML = `
+                    <a href="/books" class="bg-white text-red-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 hover:scale-105 transition-all inline-block shadow-lg mr-4">
+                        Browse Books
+                    </a>
+                    <a href="/register" class="bg-red-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-red-700 hover:scale-105 transition-all inline-block shadow-lg">
+                        Join Now
+                    </a>
+                `;
+            }
+
+            if (sellBooksLink) sellBooksLink.style.display = 'none';
+        }
+    })();
+
+    function logout() {
+        localStorage.removeItem('jwt');
+        localStorage.removeItem('username');
+        document.cookie = 'jwt=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        window.location.href = '/';
+    }
+</script>
 
 </body>
 </html>
