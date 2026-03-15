@@ -12,7 +12,7 @@ public class CategoryService {
     private final CategoryRepository categoryRepository;
 
     public List<Category> getAllCategories() {
-        return categoryRepository.findAllOrderByNameAsc();
+        return categoryRepository.findAll();
     }
 
     public Category getCategoryById(Long id) {
