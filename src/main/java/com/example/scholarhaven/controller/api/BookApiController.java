@@ -2,18 +2,30 @@ package com.example.scholarhaven.controller.api;
 
 import com.example.scholarhaven.dto.BookRequestDTO;
 import com.example.scholarhaven.dto.BookResponseDTO;
+import com.example.scholarhaven.entity.Category;
 import com.example.scholarhaven.entity.User;
 import com.example.scholarhaven.service.BookService;
+import com.example.scholarhaven.service.CategoryService;
 import com.example.scholarhaven.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/books")
@@ -22,6 +34,12 @@ public class BookApiController {
 
     private final BookService bookService;
     private final UserService userService;
+    private final CategoryService categoryService;
+
+    @Value("${app.upload.dir:uploads}")
+    private String uploadDir;
+
+    // ========== PUBLIC ENDPOINTS ==========
 
     @GetMapping
     public ResponseEntity<List<BookResponseDTO>> getAllBooks() {
@@ -53,12 +71,73 @@ public class BookApiController {
         return ResponseEntity.ok(bookService.getRecentBooks(limit));
     }
 
+    @GetMapping("/strategies")
+    public ResponseEntity<Map<String, String>> getAvailablePricingStrategies() {
+        return ResponseEntity.ok(bookService.getAvailablePricingStrategies());
+    }
+
+    // ========== CATEGORIES ENDPOINT ==========
+
+    @GetMapping("/categories")
+    public ResponseEntity<List<Category>> getAllCategories() {
+        List<Category> categories = categoryService.getAllCategories();
+        System.out.println("📚 API /api/books/categories called - returning " + categories.size() + " categories");
+        return ResponseEntity.ok(categories);
+    }
+
+    // ========== SELLER ENDPOINTS ==========
+
     @PostMapping
-    @PreAuthorize("hasRole('SELLER')")
+    @PreAuthorize("hasAnyRole('SELLER','ADMIN')")
     public ResponseEntity<BookResponseDTO> createBook(@RequestBody BookRequestDTO bookRequest,
                                                       @AuthenticationPrincipal UserDetails userDetails) {
         User seller = userService.findByUsername(userDetails.getUsername());
         BookResponseDTO createdBook = bookService.createBook(bookRequest, seller);
+        return new ResponseEntity<>(createdBook, HttpStatus.CREATED);
+    }
+
+    @PostMapping(value = "/with-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('SELLER','ADMIN')")
+    public ResponseEntity<BookResponseDTO> createBookWithImage(
+            @RequestParam("title") String title,
+            @RequestParam("author") String author,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam("price") BigDecimal price,
+            @RequestParam("stock") Integer stock,
+            @RequestParam("categoryId") Long categoryId,
+            @RequestParam(value = "featured", defaultValue = "false") boolean featured,
+            @RequestParam(value = "pricingStrategy", required = false) String pricingStrategy,
+            @RequestParam(value = "coverImage", required = false) MultipartFile coverImage,
+            @RequestParam(value = "previewPdf", required = false) MultipartFile previewPdf,
+            @AuthenticationPrincipal UserDetails userDetails) throws IOException {
+
+        User seller = userService.findByUsername(userDetails.getUsername());
+
+        BookRequestDTO bookRequest = new BookRequestDTO();
+        bookRequest.setTitle(title);
+        bookRequest.setAuthor(author);
+        bookRequest.setDescription(description);
+        bookRequest.setPrice(price);
+        bookRequest.setStock(stock);
+        bookRequest.setCategoryId(categoryId);
+        bookRequest.setFeatured(featured);
+        bookRequest.setPricingStrategy(pricingStrategy);
+
+        // Handle image upload
+        if (coverImage != null && !coverImage.isEmpty()) {
+            String fileName = saveFile(coverImage, "books");
+            bookRequest.setCoverImage("/uploads/books/" + fileName);
+        }
+
+        // Handle preview PDF upload
+        if (previewPdf != null && !previewPdf.isEmpty()) {
+            String pdfName = saveFile(previewPdf, "previews");
+            bookRequest.setPreviewPdf("/uploads/previews/" + pdfName);
+            System.out.println("Uploaded preview PDF file saved: " + bookRequest.getPreviewPdf());
+        }
+
+        BookResponseDTO createdBook = bookService.createBook(bookRequest, seller);
+        System.out.println("Created book with coverImage=" + bookRequest.getCoverImage() + " previewPdf=" + bookRequest.getPreviewPdf());
         return new ResponseEntity<>(createdBook, HttpStatus.CREATED);
     }
 
@@ -72,6 +151,52 @@ public class BookApiController {
         return ResponseEntity.ok(updatedBook);
     }
 
+    @PutMapping(value = "/{id}/with-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('SELLER', 'ADMIN')")
+    public ResponseEntity<BookResponseDTO> updateBookWithImage(
+            @PathVariable Long id,
+            @RequestParam("title") String title,
+            @RequestParam("author") String author,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam("price") BigDecimal price,
+            @RequestParam("stock") Integer stock,
+            @RequestParam("categoryId") Long categoryId,
+            @RequestParam(value = "featured", defaultValue = "false") boolean featured,
+            @RequestParam(value = "pricingStrategy", required = false) String pricingStrategy,
+            @RequestParam(value = "coverImage", required = false) MultipartFile coverImage,
+            @RequestParam(value = "previewPdf", required = false) MultipartFile previewPdf,
+            @AuthenticationPrincipal UserDetails userDetails) throws IOException {
+
+        User user = userService.findByUsername(userDetails.getUsername());
+
+        BookRequestDTO bookRequest = new BookRequestDTO();
+        bookRequest.setTitle(title);
+        bookRequest.setAuthor(author);
+        bookRequest.setDescription(description);
+        bookRequest.setPrice(price);
+        bookRequest.setStock(stock);
+        bookRequest.setCategoryId(categoryId);
+        bookRequest.setFeatured(featured);
+        bookRequest.setPricingStrategy(pricingStrategy);
+
+        // Handle image upload
+        if (coverImage != null && !coverImage.isEmpty()) {
+            String fileName = saveFile(coverImage, "books");
+            bookRequest.setCoverImage("/uploads/books/" + fileName);
+        }
+
+        // Handle preview PDF upload
+        if (previewPdf != null && !previewPdf.isEmpty()) {
+            String pdfName = saveFile(previewPdf, "previews");
+            bookRequest.setPreviewPdf("/uploads/previews/" + pdfName);
+            System.out.println("Updated preview PDF file saved: " + bookRequest.getPreviewPdf());
+        }
+
+        BookResponseDTO updatedBook = bookService.updateBook(id, bookRequest, user);
+        System.out.println("Updated book with coverImage=" + bookRequest.getCoverImage() + " previewPdf=" + bookRequest.getPreviewPdf());
+        return ResponseEntity.ok(updatedBook);
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('SELLER', 'ADMIN')")
     public ResponseEntity<Void> deleteBook(@PathVariable Long id,
@@ -82,11 +207,21 @@ public class BookApiController {
     }
 
     @GetMapping("/seller/me")
-    @PreAuthorize("hasRole('SELLER')")
+    @PreAuthorize("hasAnyRole('SELLER','ADMIN')")
     public ResponseEntity<List<BookResponseDTO>> getMyBooks(@AuthenticationPrincipal UserDetails userDetails) {
         User seller = userService.findByUsername(userDetails.getUsername());
         return ResponseEntity.ok(bookService.getBooksBySeller(seller));
     }
+
+    @PostMapping("/{id}/apply-strategy")
+    @PreAuthorize("hasAnyRole('SELLER', 'ADMIN')")
+    public ResponseEntity<BookResponseDTO> applyPricingStrategy(@PathVariable Long id,
+                                                                @RequestParam String strategyName) {
+        BookResponseDTO book = bookService.applyPricingStrategy(id, strategyName);
+        return ResponseEntity.ok(book);
+    }
+
+    // ========== ADMIN ENDPOINTS ==========
 
     @GetMapping("/admin/pending")
     @PreAuthorize("hasRole('ADMIN')")
@@ -112,16 +247,22 @@ public class BookApiController {
         return ResponseEntity.ok(rejectedBook);
     }
 
-    @GetMapping("/strategies")
-    public ResponseEntity<Map<String, String>> getAvailablePricingStrategies() {
-        return ResponseEntity.ok(bookService.getAvailablePricingStrategies());
-    }
+    // ========== HELPER METHODS ==========
 
-    @PostMapping("/{id}/apply-strategy")
-    @PreAuthorize("hasAnyRole('SELLER', 'ADMIN')")
-    public ResponseEntity<BookResponseDTO> applyPricingStrategy(@PathVariable Long id,
-                                                                @RequestParam String strategyName) {
-        BookResponseDTO book = bookService.applyPricingStrategy(id, strategyName);
-        return ResponseEntity.ok(book);
+    private String saveFile(MultipartFile file, String folder) throws IOException {
+        Path uploadPath = Paths.get(uploadDir, folder);
+        Files.createDirectories(uploadPath);
+
+        String originalFilename = file.getOriginalFilename();
+        String extension = "";
+        if (originalFilename != null && originalFilename.contains(".")) {
+            extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        }
+
+        String fileName = UUID.randomUUID().toString() + extension;
+        Path filePath = uploadPath.resolve(fileName);
+        Files.write(filePath, file.getBytes());
+
+        return fileName;
     }
 }
