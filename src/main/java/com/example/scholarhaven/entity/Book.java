@@ -31,6 +31,8 @@ public class Book {
 
     private String coverImage;
 
+    private String previewPdf;
+
     private boolean featured = false;
 
     @ManyToOne
@@ -85,6 +87,9 @@ public class Book {
 
     public String getCoverImage() { return coverImage; }
     public void setCoverImage(String coverImage) { this.coverImage = coverImage; }
+
+    public String getPreviewPdf() { return previewPdf; }
+    public void setPreviewPdf(String previewPdf) { this.previewPdf = previewPdf; }
 
     public boolean isFeatured() { return featured; }
     public void setFeatured(boolean featured) { this.featured = featured; }
