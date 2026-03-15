@@ -7,16 +7,20 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@200..700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body class="font-oswald bg-gray-50">
+<body class="font-sans bg-gray-50">
 
 <nav class="bg-white shadow-md sticky top-0 z-50">
     <div class="container mx-auto px-4">
         <div class="flex justify-between items-center h-20">
             <div class="flex items-center space-x-3">
-                <img src="/logo-scholarhaven.jpg" alt="ScholarHaven" class="h-12 w-12 rounded-full">
+                 
+                <div class="h-12 w-12 rounded-full bg-gradient-to-r from-red-600 to-red-800 flex items-center justify-center text-white font-bold text-xl ring-2 ring-red-200">
+                   <img src="/logo-scholarhaven.jpg" alt="ScholarHaven Logo" class="h-full w-full object-cover rounded-full">     
+                </div>
+              
                 <a href="/" class="text-2xl font-bold text-red-600">ScholarHaven</a>
             </div>
             <div class="flex-1 max-w-xl mx-8">
@@ -28,23 +32,12 @@
                     </button>
                 </form>
             </div>
-            <div class="flex items-center space-x-6">
+            <div class="flex items-center space-x-6" id="userMenu">
                 <a href="/cart" class="text-gray-700 hover:text-red-600 relative">
                     <i class="fas fa-shopping-cart text-xl"></i>
                     <span class="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
                 </a>
-                <div class="relative group">
-                    <button class="flex items-center space-x-1 text-gray-700 hover:text-red-600">
-                        <i class="fas fa-user-circle text-2xl"></i>
-                        <i class="fas fa-chevron-down text-xs"></i>
-                    </button>
-                    <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl hidden group-hover:block">
-                        <a href="/login" class="block px-4 py-2 hover:bg-gray-100">Login</a>
-                        <a href="/register" class="block px-4 py-2 hover:bg-gray-100">Register</a>
-                        <hr>
-                        <a href="/my-books" class="block px-4 py-2 hover:bg-gray-100">My Books</a>
-                    </div>
-                </div>
+                <div id="user-menu-container"></div>
             </div>
         </div>
     </div>
@@ -68,7 +61,7 @@
                 </div>
 
                 <div class="mb-4">
-                    <span class="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm" th:text="${book.status}">Available</span>
+                    <span class="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm" th:text="${book.status.replace('_', ' ')}">Available</span>
                     <span class="ml-2 inline-block bg-blue-200 rounded-full px-3 py-1 text-sm" th:text="'Stock: ' + ${book.stock}">Stock: 10</span>
                 </div>
 
@@ -77,21 +70,29 @@
                     <p class="text-gray-700" th:text="${book.description}">Description goes here...</p>
                 </div>
 
-                <div class="mb-4 text-sm text-gray-500">
+                <div class="mb-4 text-sm text-gray-500 space-y-1">
+                    <p th:if="${book.categoryName}">
+                        Category: <a th:href="@{'/books/category/' + ${book.categoryId}}" class="text-red-600 hover:underline" th:text="${book.categoryName}">Fiction</a>
+                    </p>
                     <p>Seller: <span th:text="${book.sellerName}">seller123</span></p>
                     <p>Listed on: <span th:text="${book.createdAt != null ? #temporals.format(book.createdAt, 'MMM dd, yyyy') : 'N/A'}">Jan 01, 2024</span></p>
                 </div>
 
-                <div class="flex space-x-4">
-                    <a href="#" class="bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700">
+                <div class="flex space-x-4 mt-6">
+                    <a href="#" class="bg-red-600 text-white px-5 py-3 rounded-lg hover:bg-red-700">
                         <i class="fas fa-shopping-cart mr-2"></i>Add to Cart
                     </a>
-                    <a href="/books" class="bg-gray-500 text-white px-8 py-3 rounded-lg hover:bg-gray-600">
+                    <a th:if="${book.previewPdf}" th:href="${book.previewPdf}" target="_blank" class="bg-indigo-600 text-white px-5 py-3 rounded-lg hover:bg-indigo-700">
+                        <i class="fas fa-file-pdf mr-2"></i>Preview PDF
+                    </a>
+                    <a href="/books" class="bg-gray-500 text-white px-5 py-3 rounded-lg hover:bg-gray-600">
                         Back to Books
                     </a>
                 </div>
             </div>
         </div>
+
+    
     </div>
 </div>
 
@@ -100,6 +101,83 @@
         <p class="text-gray-500">&copy; 2024 ScholarHaven. All rights reserved.</p>
     </div>
 </footer>
+
+<script>
+    (function() {
+        const token = localStorage.getItem('jwt');
+        const username = localStorage.getItem('username') || 'User';
+        const userMenuContainer = document.getElementById('user-menu-container');
+
+        if (token) {
+            document.cookie = `jwt=${token}; path=/; max-age=86400; SameSite=Lax`;
+
+            fetch('/api/user/roles', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            })
+            .then(res => res.json())
+            .then(data => {
+                const isSeller = data.roles.includes('SELLER');
+
+                let menuHtml = `
+                    <div class="relative group">
+                        <button class="flex items-center space-x-1 text-gray-700 hover:text-red-600">
+                            <i class="fas fa-user-circle text-2xl"></i>
+                            <span class="font-medium">${username}</span>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl hidden group-hover:block">
+                            <div class="px-4 py-2 border-b">
+                                <p class="text-sm text-gray-500">Signed in as</p>
+                                <p class="font-semibold">${username}</p>
+                            </div>
+                            <a href="/profile" class="block px-4 py-2 hover:bg-gray-100">Profile</a>
+                            <a href="/my-orders" class="block px-4 py-2 hover:bg-gray-100">My Orders</a>
+                `;
+
+                if (isSeller) {
+                    menuHtml += `
+                            <a href="/my-books-dashboard" class="block px-4 py-2 hover:bg-gray-100">Sell Books</a>
+                    `;
+                } else {
+                    menuHtml += `
+                            <a href="/seller/become-seller" class="block px-4 py-2 bg-yellow-50 text-yellow-700 hover:bg-yellow-100">Become a Seller</a>
+                    `;
+                }
+
+                menuHtml += `
+                            <hr>
+                            <a href="#" onclick="logout()" class="block px-4 py-2 text-red-600 hover:bg-gray-100">Logout</a>
+                        </div>
+                    </div>
+                `;
+
+                userMenuContainer.innerHTML = menuHtml;
+            })
+            .catch(() => {
+                userMenuContainer.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <a href="/login" class="text-gray-700 hover:text-red-600 px-3 py-2">Login</a>
+                        <a href="/register" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Register</a>
+                    </div>
+                `;
+            });
+        } else {
+            userMenuContainer.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <a href="/login" class="text-gray-700 hover:text-red-600 px-3 py-2">Login</a>
+                    <a href="/register" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Register</a>
+                </div>
+            `;
+        }
+    })();
+
+    function logout() {
+        localStorage.removeItem('jwt');
+        localStorage.removeItem('username');
+        document.cookie = 'jwt=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        window.location.href = '/';
+    }
+</script>
 
 </body>
 </html>
