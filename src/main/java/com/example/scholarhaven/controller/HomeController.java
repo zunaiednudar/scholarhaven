@@ -17,9 +17,6 @@ public class HomeController {
     @GetMapping("/")
     public String home(Model model) {
         model.addAttribute("categories", categoryService.getAllCategories());
-        model.addAttribute("featuredBooks", bookService.getFeaturedBooks());
-        model.addAttribute("recentBooks", bookService.getRecentBooks(8));
-        model.addAttribute("newArrivals", bookService.getRecentBooks(4));
         return "index";
     }
 
@@ -32,4 +29,6 @@ public class HomeController {
     public String contact() {
         return "contact";
     }
+
+
 }
