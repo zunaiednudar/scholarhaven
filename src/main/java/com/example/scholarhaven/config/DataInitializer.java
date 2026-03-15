@@ -2,11 +2,15 @@ package com.example.scholarhaven.config;
 
 import com.example.scholarhaven.entity.Category;
 import com.example.scholarhaven.entity.Role;
+import com.example.scholarhaven.entity.User;
 import com.example.scholarhaven.repository.CategoryRepository;
 import com.example.scholarhaven.repository.RoleRepository;
+import com.example.scholarhaven.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -14,8 +18,11 @@ public class DataInitializer implements CommandLineRunner {
 
     private final RoleRepository roleRepository;
     private final CategoryRepository categoryRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
+    @Transactional
     public void run(String... args) throws Exception {
         System.out.println("\n========== DATA INITIALIZER STARTED ==========");
 
@@ -39,6 +46,38 @@ public class DataInitializer implements CommandLineRunner {
             System.out.println("✅ Default roles created: ADMIN, SELLER, BUYER");
         } else {
             System.out.println("✅ Roles already exist, found: " + roleRepository.count() + " roles");
+        }
+
+        // ========== CREATE/UPDATE ADMIN USER ==========
+        System.out.println("👑 Checking admin user...");
+        
+        Role adminRole = roleRepository.findByName("ADMIN")
+                .orElseThrow(() -> new RuntimeException("ADMIN role not found"));
+        
+        User admin = userRepository.findByUsername("admin").orElse(null);
+        
+        if (admin == null) {
+            // Create new admin
+            admin = new User();
+            admin.setUsername("admin");
+            admin.setEmail("admin@gmail.com");
+            admin.setPassword(passwordEncoder.encode("admin123"));
+            admin.setEnabled(true);
+            admin.addRole(adminRole);
+            userRepository.save(admin);
+            System.out.println("✅ Admin user created - Username: admin, Password: admin123");
+        } else {
+            // Update existing admin's password to ensure it's correct
+            admin.setPassword(passwordEncoder.encode("admin123"));
+            admin.setEnabled(true);
+            
+            // Ensure admin has ADMIN role
+            if (!admin.hasRole("ADMIN")) {
+                admin.addRole(adminRole);
+            }
+            
+            userRepository.save(admin);
+            System.out.println("✅ Admin user updated - Password reset to: admin123");
         }
 
         // ========== CREATE DEFAULT CATEGORIES ==========
