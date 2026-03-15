@@ -8,6 +8,7 @@ import java.util.Map;
 
 public interface BookService {
     List<BookResponseDTO> getAllAvailableBooks();
+    List<BookResponseDTO> getAllBooks();
     BookResponseDTO getBookById(Long id);
     BookResponseDTO createBook(BookRequestDTO bookRequest, User seller);
     BookResponseDTO updateBook(Long id, BookRequestDTO bookRequest, User user);
@@ -15,6 +16,7 @@ public interface BookService {
     List<BookResponseDTO> getBooksBySeller(User seller);
     List<BookResponseDTO> getBooksByCategory(Long categoryId);
     List<BookResponseDTO> searchBooks(String query);
+    List<BookResponseDTO> searchBooksByCategory(Long categoryId, String query);
     List<BookResponseDTO> getRecentBooks(int limit);
     List<BookResponseDTO> getFeaturedBooks();
     List<BookResponseDTO> getPendingApprovalBooks();
