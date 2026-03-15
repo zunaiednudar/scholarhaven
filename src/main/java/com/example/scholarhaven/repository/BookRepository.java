@@ -23,8 +23,13 @@ public interface BookRepository extends JpaRepository<Book, Long> {
 
     @Query("SELECT b FROM Book b WHERE b.status = 'AVAILABLE' AND " +
             "(LOWER(b.title) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-            "LOWER(b.author) LIKE LOWER(CONCAT('%', :query, '%')))")
+            "LOWER(b.author) LIKE LOWER(CONCAT('%', :query, '%'))) ")
     List<Book> searchBooks(@Param("query") String query);
+
+    @Query("SELECT b FROM Book b WHERE b.status = 'AVAILABLE' AND b.category.id = :categoryId AND " +
+            "(LOWER(b.title) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+            "LOWER(b.author) LIKE LOWER(CONCAT('%', :query, '%'))) ")
+    List<Book> searchBooksByCategory(@Param("categoryId") Long categoryId, @Param("query") String query);
 
     @Query("SELECT b FROM Book b WHERE b.status = 'PENDING_APPROVAL'")
     List<Book> findPendingApprovalBooks();
