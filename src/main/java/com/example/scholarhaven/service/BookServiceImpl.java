@@ -33,6 +33,14 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
+    public List<BookResponseDTO> getAllBooks() {
+        return bookRepository.findAll()
+                .stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public BookResponseDTO getBookById(Long id) {
         Book book = findBookById(id);
         return mapToDTO(book);
@@ -120,6 +128,16 @@ public class BookServiceImpl implements BookService {
         return bookRepository.searchBooks(query)
                 .stream()
                 .map(this::mapToDTO)
+                .filter(book -> "AVAILABLE".equalsIgnoreCase(book.getStatus()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<BookResponseDTO> searchBooksByCategory(Long categoryId, String query) {
+        return bookRepository.searchBooksByCategory(categoryId, query)
+                .stream()
+                .map(this::mapToDTO)
+                .filter(book -> "AVAILABLE".equalsIgnoreCase(book.getStatus()))
                 .collect(Collectors.toList());
     }
 
@@ -152,7 +170,7 @@ public class BookServiceImpl implements BookService {
     public BookResponseDTO approveBook(Long id, User admin) {
         Book book = findBookById(id);
 
-        if (!"ADMIN".equals(admin.getRole().getName())) {
+        if (!admin.hasRole("ADMIN")) {
             throw new RuntimeException("Only admins can approve books");
         }
 
@@ -166,7 +184,7 @@ public class BookServiceImpl implements BookService {
     public BookResponseDTO rejectBook(Long id, User admin) {
         Book book = findBookById(id);
 
-        if (!"ADMIN".equals(admin.getRole().getName())) {
+        if (!admin.hasRole("ADMIN")) {
             throw new RuntimeException("Only admins can reject books");
         }
 
@@ -200,7 +218,7 @@ public class BookServiceImpl implements BookService {
     }
 
     private boolean canUserModifyBook(User user, Book book) {
-        if ("ADMIN".equals(user.getRole().getName())) {
+        if (user.hasRole("ADMIN")) {
             return true;
         }
         return book.getSeller().getId().equals(user.getId());
@@ -214,6 +232,7 @@ public class BookServiceImpl implements BookService {
         book.setPrice(dto.getPrice());
         book.setStock(dto.getStock());
         book.setCoverImage(dto.getCoverImage());
+        book.setPreviewPdf(dto.getPreviewPdf());
         book.setFeatured(dto.isFeatured());
         return book;
     }
@@ -225,16 +244,26 @@ public class BookServiceImpl implements BookService {
         if (dto.getPrice() != null) book.setPrice(dto.getPrice());
         if (dto.getStock() != null) book.setStock(dto.getStock());
         if (dto.getCoverImage() != null) book.setCoverImage(dto.getCoverImage());
+        if (dto.getPreviewPdf() != null) book.setPreviewPdf(dto.getPreviewPdf());
         book.setFeatured(dto.isFeatured());
     }
 
     private BookResponseDTO mapToDTO(Book book) {
         BookResponseDTO dto = BookResponseDTO.fromEntity(book);
 
+        dto.setCoverImage(normalizeFilePath(dto.getCoverImage()));
+        dto.setPreviewPdf(normalizeFilePath(dto.getPreviewPdf()));
+
         strategyContext.setPricingStrategy("STANDARD");
         dto.setFinalPrice(strategyContext.calculatePrice(book));
         dto.setPricingStrategyUsed(strategyContext.getCurrentPricingStrategyName());
 
         return dto;
+    }
+
+    private String normalizeFilePath(String path) {
+        if (path == null || path.isBlank()) return null;
+        if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("/")) return path;
+        return "/" + path;
     }
 }
