@@ -41,7 +41,7 @@
         <div class="p-8">
             <div th:if="${alreadySeller}" class="bg-green-100 border border-green-400 text-green-700 px-6 py-4 rounded-lg mb-6">
                 <i class="fas fa-check-circle mr-2"></i>
-                You are already a seller! You can start listing your books now.
+                You are a seller now! You can start listing your books now.
             </div>
 
             <div th:if="${param.success}" class="bg-green-100 border border-green-400 text-green-700 px-6 py-4 rounded-lg mb-6">
@@ -101,16 +101,12 @@
             </div>
 
             <div th:if="${alreadySeller}" class="text-center border-t pt-8">
-                <a href="/add-book"
+                <a href="/my-books-dashboard"
                    class="bg-red-600 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-red-700 transition-colors inline-block">
                     <i class="fas fa-plus-circle mr-2"></i>
                     Start Listing Books
                 </a>
-                <a href="/my-books"
-                   class="ml-4 bg-gray-600 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-700 transition-colors inline-block">
-                    <i class="fas fa-book mr-2"></i>
-                    Manage My Books
-                </a>
+              
             </div>
         </div>
     </div>
