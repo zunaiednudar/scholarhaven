@@ -279,5 +279,4 @@ public class BookServiceIntegrationTest {
 
         long emptyCount = bookService.getBookCountByCategory(emptyCategory.getId());
         assertEquals(0, emptyCount, "Should have 0 books in the empty category");
-    }
-}
+    }}
