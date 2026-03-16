@@ -118,5 +118,4 @@ public class BookRepositoryIntegrationTest {
 
         boolean notExists = bookRepository.existsByIdAndSeller(testBook.getId(), otherSeller);
         assertFalse(notExists);
-    }
-}
+    }}
