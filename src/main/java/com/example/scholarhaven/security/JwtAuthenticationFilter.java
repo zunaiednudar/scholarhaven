@@ -2,15 +2,17 @@ package com.example.scholarhaven.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 
 import java.io.IOException;
 
@@ -22,20 +24,39 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter { // OncePerRe
     private final UserDetailsService userDetailsService;
 
     @Override
-    protected void dbFilterInternal(HttpServletRequest request,
+    protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
-        final String authHeader = request.getHeader("Authorization");
+        String jwt = null;
 
-        // Skip filter if no Bearer token is present
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        // Try to get token from cookie first
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (cookie.getName().equals("jwt")) {
+                    jwt = cookie.getValue();
+                    break;
+                }
+            }
+        }
+
+        // If not in cookie, try Authorization header
+        if (jwt == null) {
+            final String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                // "Bearer " -> 7 letters
+                // Actual JWT token comes after the space
+                jwt = authHeader.substring(7);
+            }
+        }
+
+        // If no token found in either place, skip
+        if (jwt == null) {
             filterChain.doFilter(request, response); // Pass this request and response to the next filter / controller (if this is the last filter)
             return;
         }
 
-        // "Bearer " -> 7 letters
-        // Actual JWT token comes after the space
-        final String jwt = authHeader.substring(7);
+        // Validate and authenticate
         final String username = jwtService.extractUsername(jwt);
 
         // Only authenticate if not already authenticated
