@@ -32,6 +32,15 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll() // login/register
                 // restricted to users with role ADMIN
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers(
+                        "/login.html",
+                        "/register.html",
+                        "/forgot-password.html",
+                        "/css/**",
+                        "/js/**",
+                        "/images/**",
+                        "/favicon.ico"
+                ).permitAll()
                 .anyRequest().authenticated()
             )
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // No HTTP sessions are created
