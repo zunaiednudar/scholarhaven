@@ -15,6 +15,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
 import java.io.IOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component // Required for Spring to find and autowire this
 @RequiredArgsConstructor
@@ -22,6 +24,29 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter { // OncePerRequestFilter -> Filter is executed only once per HTTP request
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+
+        // Public endpoints
+        return path.startsWith("/public/") ||
+                path.startsWith("/api/auth/") ||
+                path.equals("/login") ||
+                path.equals("/register") ||
+                path.equals("/forgot-password") ||
+                path.startsWith("/css/") ||
+                path.startsWith("/js/") ||
+                path.startsWith("/images/") ||
+                path.equals("/favicon.ico") ||
+                path.equals("/") ||
+                path.equals("/books") ||
+                path.startsWith("/books/category/") ||
+                path.startsWith("/books/featured") ||
+                path.startsWith("/books/new-arrivals") ||
+                path.startsWith("/books/search");
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -57,24 +82,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter { // OncePerRe
         }
 
         // Validate and authenticate
-        final String username = jwtService.extractUsername(jwt);
+        try {
+            final String username = jwtService.extractUsername(jwt);
 
-        // Only authenticate if not already authenticated
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            // Only authenticate if not already authenticated
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-            // Spring security object that represents an authenticated user
-            // Constructor parameters -> principal, credentials, authorities
-            if (jwtService.isTokenValid(jwt, userDetails)) {
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                // Spring security object that represents an authenticated user
+                // Constructor parameters -> principal, credentials, authorities
+                if (jwtService.isTokenValid(jwt, userDetails)) {
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
-                // WebAuthenticationDetailsSource().buildDetails(request) -> Creates additional details about the request
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    // WebAuthenticationDetailsSource().buildDetails(request) -> Creates additional details about the request
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                // Spring security's thread-local storage for security information
-                // .getContext() -> Gets the current security context for this request / thread
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                    // Spring security's thread-local storage for security information
+                    // .getContext() -> Gets the current security context for this request / thread
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
             }
+        } catch (Exception e) {
+            logger.warn("JWT validation failed: {}", e.getMessage());
         }
 
         filterChain.doFilter(request, response);
