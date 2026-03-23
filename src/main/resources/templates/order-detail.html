@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Detail - ScholarHaven</title>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        playfair: ['Playfair Display', 'serif'],
+                        lato: ['Lato', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+</head>
+<body class="font-lato bg-neutral-100 min-h-screen" style="font-family: 'Lato', sans-serif;">
+
+<!-- Navbar -->
+<nav class="bg-neutral-800 text-white px-8 py-4 flex justify-between items-center">
+    <a href="/" class="font-playfair text-xl font-semibold"
+       style="font-family: 'Playfair Display', serif;">ScholarHaven</a>
+    <div class="flex gap-6 text-sm">
+        <a href="/books" class="hover:text-blue-300">Books</a>
+        <a href="/orders" class="hover:text-blue-300">My Orders</a>
+        <a href="/profile" class="hover:text-blue-300">Profile</a>
+    </div>
+</nav>
+
+<div class="max-w-3xl mx-auto px-6 py-10">
+
+    <!-- Back link -->
+    <a href="/orders" class="text-blue-500 text-sm hover:text-blue-600 mb-6 inline-block">
+        ← Back to My Orders
+    </a>
+
+    <!-- Order header -->
+    <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="font-playfair text-2xl font-semibold mb-1"
+                    style="font-family: 'Playfair Display', serif;">
+                    Order #<span th:text="${order.id}"></span>
+                </h1>
+                <p class="text-sm text-gray-400"
+                   th:text="'Placed on ' + ${#temporals.format(order.createdAt, 'dd MMM yyyy, HH:mm')}"></p>
+            </div>
+
+            <!-- Status badge -->
+            <span th:text="${order.status}"
+                  th:classappend="${order.status == 'PENDING'} ? 'bg-yellow-100 text-yellow-700' :
+                                     (${order.status == 'CONFIRMED'} ? 'bg-blue-100 text-blue-700' :
+                                     (${order.status == 'SHIPPED'} ? 'bg-purple-100 text-purple-700' :
+                                     (${order.status == 'DELIVERED'} ? 'bg-green-100 text-green-700' :
+                                     (${order.status == 'CANCELLED'} ? 'bg-red-100 text-red-700' :
+                                     'bg-gray-100 text-gray-700'))))"
+                  class="text-sm font-semibold px-4 py-1 rounded-full">
+                </span>
+        </div>
+
+        <!-- Buyer info -->
+        <div class="mt-4 pt-4 border-t">
+            <p class="text-sm text-gray-500">
+                Buyer: <span class="text-gray-700 font-medium"
+                             th:text="${order.buyerName + ' (@' + order.buyerUsername + ')'}"></span>
+            </p>
+        </div>
+    </div>
+
+    <!-- Order items -->
+    <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <h2 class="font-playfair text-lg font-semibold mb-4"
+            style="font-family: 'Playfair Display', serif;">Items</h2>
+
+        <div class="space-y-4">
+            <div th:each="item : ${order.items}"
+                 class="flex items-center gap-4 pb-4 border-b last:border-0 last:pb-0">
+
+                <img th:src="${item.bookCoverImage != null ? item.bookCoverImage : '/images/no-cover.png'}"
+                     alt="Book cover"
+                     class="w-16 h-20 object-cover rounded shadow-sm"/>
+
+                <div class="flex-1">
+                    <p class="font-medium" th:text="${item.bookTitle}"></p>
+                    <p class="text-sm text-gray-500" th:text="${item.bookAuthor}"></p>
+                    <p class="text-sm text-gray-400 mt-1"
+                       th:text="'$' + ${item.priceAtPurchase} + ' × ' + ${item.quantity}"></p>
+                </div>
+
+                <p class="font-semibold text-gray-700"
+                   th:text="'$' + ${item.subtotal}"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order summary -->
+    <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <h2 class="font-playfair text-lg font-semibold mb-4"
+            style="font-family: 'Playfair Display', serif;">Summary</h2>
+
+        <div class="space-y-2 text-sm">
+            <div class="flex justify-between text-gray-500">
+                <span th:text="${#lists.size(order.items)} + ' item(s)'"></span>
+            </div>
+            <div class="flex justify-between font-semibold text-base pt-2 border-t">
+                <span>Total</span>
+                <span th:text="'$' + ${order.totalPrice}"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancel button — only for PENDING orders -->
+    <div th:if="${order.status == 'PENDING'}" class="text-right">
+        <button th:data-order-id="${order.id}"
+                onclick="cancelOrder(this.dataset.orderId)"
+                class="bg-red-500 text-white px-6 py-2 rounded hover:bg-red-600 text-sm font-semibold">
+            Cancel Order
+        </button>
+    </div>
+</div>
+
+<script>
+    async function cancelOrder(orderId) {
+        if (!confirm('Are you sure you want to cancel this order?')) return;
+
+        try {
+            const response = await fetch(`/api/orders/${orderId}/cancel`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (response.ok) {
+                window.location.href = '/orders';
+            } else {
+                alert('Failed to cancel order. Please try again.');
+            }
+        } catch (error) {
+            alert('Something went wrong. Please try again.');
+        }
+    }
+</script>
+</body>
+</html>
