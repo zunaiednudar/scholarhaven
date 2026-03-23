@@ -48,10 +48,10 @@ public class AuthService {
                 .username(request.getUsername())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(role)
                 .enabled(true)
                 .build();
 
+        user.addRole(role);
         userRepository.save(user);
 
         // Generate JWT token for the new user
