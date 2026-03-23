@@ -8,20 +8,21 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-
-import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 
 @Component // Required for Spring to find and autowire this
 @RequiredArgsConstructor
 // Automatically generates a constructor for the class (Includes all final fields, all fields marked with @NonNull)
 public class JwtAuthenticationFilter extends OncePerRequestFilter { // OncePerRequestFilter -> Filter is executed only once per HTTP request
+
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
@@ -33,12 +34,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter { // OncePerRe
         // Public endpoints
         return path.startsWith("/public/") ||
                 path.startsWith("/api/auth/") ||
+                path.startsWith("/api/books") ||
                 path.equals("/login") ||
                 path.equals("/register") ||
                 path.equals("/forgot-password") ||
+                path.equals("/reset-password") ||
+                path.equals("/about") ||
+                path.equals("/contact") ||
                 path.startsWith("/css/") ||
                 path.startsWith("/js/") ||
                 path.startsWith("/images/") ||
+                path.startsWith("/uploads/") ||
                 path.equals("/favicon.ico") ||
                 path.equals("/") ||
                 path.equals("/books") ||
@@ -92,7 +98,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter { // OncePerRe
                 // Spring security object that represents an authenticated user
                 // Constructor parameters -> principal, credentials, authorities
                 if (jwtService.isTokenValid(jwt, userDetails)) {
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
 
                     // WebAuthenticationDetailsSource().buildDetails(request) -> Creates additional details about the request
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
