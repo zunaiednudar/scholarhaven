@@ -33,13 +33,15 @@ public class SecurityConfig {
                 // restricted to users with role ADMIN
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers(
-                        "/login.html",
-                        "/register.html",
-                        "/forgot-password.html",
+                        "/login",
+                        "/register",
+                        "/forgot-password",
                         "/css/**",
                         "/js/**",
                         "/images/**",
-                        "/favicon.ico"
+                        "/favicon.ico",
+                        "/*.jpg",
+                        "/*.png"
                 ).permitAll()
                 .anyRequest().authenticated()
             )

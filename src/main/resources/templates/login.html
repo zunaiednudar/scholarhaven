@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -25,11 +25,9 @@
 </head>
 <body class="font-oswald bg-neutral-800 flex items-center justify-center h-screen">
     <div class="bg-white p-8 rounded-xl w-full max-w-md">
-        <div class="flex flex-col items-center mb-6">
+        <div class="flex flex-col items-center mb-6 gap-6">
             <img src="../logo-scholarhaven.jpg" alt="ScholarHaven Logo" class="w-32 h-32" />
-
-            <h2 class="text-4xl font-semibold">Login</h2>
-            <h1 class="text-2xl text-red-800">ScholarHaven</h1>
+            <h2 class="text-2xl">Log in to your account</h2>
         </div>
 
         <hr class="mb-8" />
@@ -43,7 +41,7 @@
             <div>
                 <div class="flex flex-row justify-between items-center">
                     <label for="password" class="block text-gray-700">Password</label>
-                    <a href="forgot-password.html" class="text-blue-500 hover:text-blue-600 cursor-pointer">Forgot Password?</a>
+                    <a href="/forgot-password" class="text-blue-500 hover:text-blue-600 cursor-pointer">Forgot Password?</a>
                 </div>
                 <input type="password" id="password" name="password" class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
@@ -54,7 +52,7 @@
 
             <p class="text-sm text-gray-500 text-center mt-4">
                 Don't have an account?
-                <a href="register.html" class="text-blue-500 hover:text-blue-600">Register</a>
+                <a href="/register" class="text-blue-500 hover:text-blue-600">Register</a>
             </p>
 
             <p id="errorMessage" class="text-red-500 text-sm mt-2"></p>
