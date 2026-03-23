@@ -11,6 +11,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 public class UserPrincipal implements UserDetails {
@@ -20,7 +21,15 @@ public class UserPrincipal implements UserDetails {
     // Role "ADMIN" becomes "ROLE_ADMIN" which matches hasRole("ADMIN") in SecurityConfig.java
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().getName()));
+        return user.getRoles()
+                .stream()
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
+                .collect(Collectors.toSet());
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return user.isEnabled();
     }
 
     @Override
@@ -49,11 +58,6 @@ public class UserPrincipal implements UserDetails {
     @Override
     public boolean isCredentialsNonExpired() {
         return true; // No credential expiration
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return user.isEnabled();
     }
 
     public User getUser() {

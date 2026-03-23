@@ -2,7 +2,6 @@ package com.example.scholarhaven.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.util.HashSet;
 import java.util.Set;
 
@@ -13,13 +12,15 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder
 public class Role {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String name; // e.g. "ADMIN"
+    private String name;
 
-    @OneToMany(mappedBy = "role")
+    @ManyToMany(mappedBy = "roles")
+    @Builder.Default
     private Set<User> users = new HashSet<>();
 }
