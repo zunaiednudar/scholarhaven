@@ -12,3 +12,21 @@ spring:
       ddl-auto: validate
     # Print all generated SQL queries in the console for debugging
     show-sql: true
+    open-in-view: false
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+# Replace the contents later
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 86400000
