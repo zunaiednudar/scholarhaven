@@ -15,10 +15,10 @@ spring:
     open-in-view: false
 
   mail:
-    host: sandbox.smtp.mailtrap.io
-    port: 2525
-    username: ${MAIL_USERNAME:73d61a4514e39e}
-    password: ${MAIL_PASSWORD:****2878}
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -28,5 +28,5 @@ spring:
 
 # Replace the contents later
 jwt:
-  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+  secret: ${JWT_SECRET}
   expiration: 86400000
