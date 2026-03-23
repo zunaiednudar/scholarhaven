@@ -12,6 +12,19 @@ spring:
       ddl-auto: validate
     # Print all generated SQL queries in the console for debugging
     show-sql: true
+    open-in-view: false
+
+  mail:
+    host: sandbox.smtp.mailtrap.io
+    port: 2525
+    username: ${MAIL_USERNAME:73d61a4514e39e}
+    password: ${MAIL_PASSWORD:****2878}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 # Replace the contents later
 jwt:
