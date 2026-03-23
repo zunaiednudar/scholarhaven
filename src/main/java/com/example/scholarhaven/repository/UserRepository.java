@@ -10,6 +10,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // Returns Optional<User> so I can handle the case where no user is found
     // SELECT * FROM users WHERE username = ?;
     Optional<User> findByUsername(String username);
+    Optional<User> findByEmail(String email);
     boolean existsByUsername(String username);
     boolean existsByEmail(String email);
 }
