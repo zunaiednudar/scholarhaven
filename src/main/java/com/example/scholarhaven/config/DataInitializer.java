@@ -24,7 +24,7 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) throws Exception {
-        System.out.println("\nDATA INITIALIZER STARTED");
+        System.out.println("\n========== DATA INITIALIZER STARTED ==========");
 
         // ========== CREATE DEFAULT ROLES ==========
         if (roleRepository.count() == 0) {
@@ -43,12 +43,12 @@ public class DataInitializer implements CommandLineRunner {
             roleRepository.save(sellerRole);
             roleRepository.save(buyerRole);
 
-            System.out.println("Default roles created: ADMIN, SELLER, BUYER");
+            System.out.println("✅ Default roles created: ADMIN, SELLER, BUYER");
         } else {
-            System.out.println("Roles already exist, found: " + roleRepository.count() + " roles");
+            System.out.println("✅ Roles already exist, found: " + roleRepository.count() + " roles");
         }
 
-        // CREATE/UPDATE ADMIN USER
+        // ========== CREATE/UPDATE ADMIN USER ==========
         System.out.println("👑 Checking admin user...");
         
         Role adminRole = roleRepository.findByName("ADMIN")
@@ -59,17 +59,15 @@ public class DataInitializer implements CommandLineRunner {
         if (admin == null) {
             // Create new admin
             admin = new User();
-            admin.setName("Administrator");
             admin.setUsername("admin");
             admin.setEmail("admin@gmail.com");
             admin.setPassword(passwordEncoder.encode("admin123"));
             admin.setEnabled(true);
             admin.addRole(adminRole);
             userRepository.save(admin);
-            System.out.println("Admin user created - Username: admin, Password: admin123");
+            System.out.println("✅ Admin user created - Username: admin, Password: admin123");
         } else {
             // Update existing admin's password to ensure it's correct
-            admin.setName("Administrator");
             admin.setPassword(passwordEncoder.encode("admin123"));
             admin.setEnabled(true);
             
@@ -79,12 +77,12 @@ public class DataInitializer implements CommandLineRunner {
             }
             
             userRepository.save(admin);
-            System.out.println("Admin user updated - Password reset to: admin123");
+            System.out.println("✅ Admin user updated - Password reset to: admin123");
         }
 
         // ========== CREATE DEFAULT CATEGORIES ==========
         if (categoryRepository.count() == 0) {
-            System.out.println("Creating default categories...");
+            System.out.println("📚 Creating default categories...");
 
             Category[] categories = {
                     createCategory("Fiction", "Fictional books, novels, and literature"),
@@ -104,12 +102,12 @@ public class DataInitializer implements CommandLineRunner {
                 System.out.println("  - Created: " + category.getName());
             }
 
-            System.out.println(categories.length + " default categories created successfully!");
+            System.out.println("✅ " + categories.length + " default categories created successfully!");
         } else {
-            System.out.println("Categories already exist, found: " + categoryRepository.count() + " categories");
+            System.out.println("✅ Categories already exist, found: " + categoryRepository.count() + " categories");
         }
 
-        System.out.println("DATA INITIALIZER COMPLETED\n");
+        System.out.println("========== DATA INITIALIZER COMPLETED ==========\n");
     }
 
     private Category createCategory(String name, String description) {
