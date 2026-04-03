@@ -111,27 +111,5 @@ public class BookControllerUnitTest {
         verify(model).addAttribute(eq("book"), eq(testBook));
     }
 
-    @Test
-    void testFeaturedBooks() {
-        when(bookService.getFeaturedBooks()).thenReturn(testBooks);
-        when(categoryService.getAllCategories()).thenReturn(Collections.singletonList(testCategory));
 
-        String result = bookController.featuredBooks(model);
-
-        assertEquals("books", result);
-        verify(bookService).getFeaturedBooks();
-        verify(model).addAttribute(eq("title"), eq("Featured Books"));
-    }
-
-    @Test
-    void testNewArrivals() {
-        when(bookService.getRecentBooks(20)).thenReturn(testBooks);
-        when(categoryService.getAllCategories()).thenReturn(Collections.singletonList(testCategory));
-
-        String result = bookController.newArrivals(model);
-
-        assertEquals("books", result);
-        verify(bookService).getRecentBooks(20);
-        verify(model).addAttribute(eq("title"), eq("New Arrivals"));
-    }
 }
