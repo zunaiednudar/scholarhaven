@@ -185,9 +185,22 @@ public class BookApiControllerUnitTest {
         when(userService.findByUsername("testuser")).thenReturn(testUser);
         doNothing().when(bookService).deleteBook(1L, testUser);
 
-        ResponseEntity<Void> response = bookApiController.deleteBook(1L, userDetails);
+        ResponseEntity<?> response = bookApiController.deleteBook(1L, userDetails);
 
-        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(bookService).deleteBook(1L, testUser);
+    }
+
+    @Test
+    void testDeleteBook_ShouldReturnForbidden_WhenUserHasNoPermission() {
+        when(userDetails.getUsername()).thenReturn("testuser");
+        when(userService.findByUsername("testuser")).thenReturn(testUser);
+        doThrow(new RuntimeException("You don't have permission to delete this book"))
+            .when(bookService).deleteBook(1L, testUser);
+
+        ResponseEntity<?> response = bookApiController.deleteBook(1L, userDetails);
+
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
         verify(bookService).deleteBook(1L, testUser);
     }
 
