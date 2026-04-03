@@ -38,4 +38,8 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     long countAvailableBooksByCategory(@Param("category") Category category);
 
     boolean existsByIdAndSeller(Long id, User seller);
+    
+    // Check if book has order references
+    @Query("SELECT COUNT(oi) > 0 FROM OrderItem oi WHERE oi.book.id = :bookId")
+    boolean hasOrderReferences(@Param("bookId") Long bookId);
 }
