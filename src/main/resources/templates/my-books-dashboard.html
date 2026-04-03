@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Books Dashboard - ScholarHaven</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow-y: auto; }
+        .modal-content { background-color: #fefefe; margin: 50px auto; padding: 20px; border-radius: 12px; width: 90%; max-width: 600px; }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close:hover { color: #000; }
+        .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-top: 20px; }
+        .book-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); transition: transform 0.2s; }
+        .book-card:hover { transform: translateY(-5px); box-shadow: 0 5px 20px rgba(0,0,0,0.15); }
+        .book-info { padding: 15px; }
+        .book-title { font-weight: 600; margin-bottom: 5px; font-size: 1.1rem; }
+        .book-price { color: #dc2626; font-weight: 600; font-size: 1.2rem; }
+        .book-actions { display: flex; gap: 10px; padding: 15px; border-top: 1px solid #eee; }
+        .btn-edit { background-color: #10b981; color: white; padding: 8px; border-radius: 6px; cursor: pointer; flex: 1; text-align: center; transition: background-color 0.2s; }
+        .btn-edit:hover { background-color: #059669; }
+        .btn-delete { background-color: #ef4444; color: white; padding: 8px; border-radius: 6px; cursor: pointer; flex: 1; text-align: center; transition: background-color 0.2s; }
+        .btn-delete:hover { background-color: #dc2626; }
+        .btn-add { background-color: #dc2626; color: white; padding: 12px 24px; border-radius: 8px; cursor: pointer; transition: background-color 0.2s; }
+        .btn-add:hover { background-color: #b91c1c; }
+        .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .toast { position: fixed; bottom: 20px; right: 20px; padding: 12px 24px; border-radius: 8px; color: white; z-index: 1001; animation: slideIn 0.3s ease; }
+        .toast-success { background-color: #10b981; }
+        .toast-error { background-color: #ef4444; }
+        .toast-warning { background-color: #f59e0b; }
+        .toast-info { background-color: #3b82f6; }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .loading-spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid #f3f3f3; border-top: 2px solid #dc2626; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 8px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .status-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; }
+        .status-available { background-color: #d1fae5; color: #065f46; }
+        .status-pending { background-color: #fef3c7; color: #92400e; }
+        .status-rejected { background-color: #fee2e2; color: #991b1b; }
+        .status-sold { background-color: #e2e3e5; color: #4b5563; }
+        .book-cover-placeholder {
+            background-color: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+<!-- Top Banner -->
+<div class="bg-gradient-to-r from-red-600 to-red-800 text-white text-center py-2 text-sm">
+    <i class="fas fa-truck mr-2"></i> Free Shipping on orders over $50
+</div>
+
+<!-- Navigation -->
+<nav class="bg-white shadow-lg sticky top-0 z-50">
+    <div class="container mx-auto px-4">
+        <div class="flex justify-between items-center h-20">
+            <div class="flex items-center space-x-3">
+                <div class="h-12 w-12 rounded-full bg-gradient-to-r from-red-600 to-red-800 flex items-center justify-center text-white font-bold text-xl ring-2 ring-red-200">
+                   <img src="/logo-scholarhaven.jpg" alt="ScholarHaven Logo" class="h-full w-full object-cover rounded-full">     
+                </div>
+                <span class="text-2xl font-bold bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent">ScholarHaven</span>
+            </div>
+
+            <div class="flex-1 max-w-xl mx-8">
+                <form action="/books" method="get" class="flex">
+                    <input type="text" name="q" placeholder="Search by title or author..."
+                           class="w-full px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-red-400">
+                    <button type="submit" class="bg-red-600 text-white px-6 rounded-r-lg hover:bg-red-700">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
+
+            <div class="flex items-center space-x-6" id="userMenu">
+                <a href="/cart" class="text-gray-700 hover:text-red-600 relative">
+                    <i class="fas fa-shopping-cart text-xl"></i>
+                    <span id="cart-count" class="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                </a>
+                <div id="user-menu-container"></div>
+            </div>
+        </div>
+
+        <div class="flex space-x-8 py-3 border-t overflow-x-auto">
+            <a href="/" class="text-gray-700 hover:text-red-600">Home</a>
+            <a href="/books" class="text-gray-700 hover:text-red-600">All Books</a>
+            <a href="/orders" class="text-gray-700 hover:text-red-600">My Orders</a>
+            <a href="/my-books-dashboard" class="text-red-600 font-medium">My Books</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container mx-auto px-4 py-8">
+    <div class="header-actions">
+        <h1 class="text-3xl font-bold">My Books Dashboard</h1>
+        <button onclick="openAddModal()" class="btn-add">
+            <i class="fas fa-plus mr-2"></i>Add New Book
+        </button>
+    </div>
+
+    <div id="booksGrid" class="book-grid">
+        <div class="text-center py-12 col-span-full">
+            <i class="fas fa-spinner fa-spin text-4xl text-red-600"></i>
+            <p class="mt-4 text-gray-600">Loading your books...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Book Modal -->
+<div id="bookModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2 id="modalTitle" class="text-2xl font-bold mb-6">Add New Book</h2>
+        <form id="bookForm">
+            <input type="hidden" id="bookId">
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Title *</label>
+                <input type="text" id="title" required class="w-full p-2 border rounded focus:ring-2 focus:ring-red-400 focus:outline-none">
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Author *</label>
+                <input type="text" id="author" required class="w-full p-2 border rounded focus:ring-2 focus:ring-red-400 focus:outline-none">
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Description</label>
+                <textarea id="description" rows="4" class="w-full p-2 border rounded focus:ring-2 focus:ring-red-400 focus:outline-none"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Price ($) *</label>
+                    <input type="number" id="price" step="0.01" min="0.01" required class="w-full p-2 border rounded focus:ring-2 focus:ring-red-400 focus:outline-none">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Stock *</label>
+                    <input type="number" id="stock" min="0" required class="w-full p-2 border rounded focus:ring-2 focus:ring-red-400 focus:outline-none">
+                </div>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Category *</label>
+                <select id="categoryId" required class="w-full p-2 border rounded focus:ring-2 focus:ring-red-400 focus:outline-none">
+                    <option value="">-- Select a Category --</option>
+                    <option value="1">Fiction</option>
+                    <option value="2">Non-Fiction</option>
+                    <option value="3">Science</option>
+                    <option value="4">Technology</option>
+                    <option value="5">Children's Books</option>
+                    <option value="6">Academic</option>
+                    <option value="7">History</option>
+                    <option value="8">Self-Help</option>
+                    <option value="9">Business</option>
+                    <option value="10">Art</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Cover Image *</label>
+                <input type="file" id="coverImage" accept="image/*" class="w-full p-2 border rounded">
+                <p class="text-xs text-gray-500 mt-1">Max file size: 10MB. Supported formats: JPG, PNG, GIF</p>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Preview PDF (optional)</label>
+                <input type="file" id="previewPdf" accept="application/pdf" class="w-full p-2 border rounded">
+                <p class="text-xs text-gray-500 mt-1">Max file size: 10MB</p>
+            </div>
+            <div id="currentPreviewContainer" class="mb-4" style="display:none;">
+                <label class="block text-gray-700 mb-2">Current Preview PDF</label>
+                <a id="currentPreviewLink" href="#" target="_blank" class="text-blue-600 hover:underline">Download preview</a>
+            </div>
+            <div class="flex space-x-4">
+                <button type="submit" class="flex-1 bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition">Save Book</button>
+                <button type="button" onclick="closeModal()" class="flex-1 bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600 transition">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content max-w-md">
+        <span class="close" onclick="closeDeleteModal()">&times;</span>
+        <div class="text-center">
+            <i class="fas fa-exclamation-triangle text-6xl text-yellow-500 mb-4"></i>
+            <h2 class="text-2xl font-bold mb-4">Delete Book</h2>
+            <div id="deleteWarning" class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                <span>Warning: If this book has been ordered by customers, deleting it will also remove those orders from order history. This action cannot be undone.</span>
+            </div>
+            <p class="text-gray-600 mb-6">Are you sure you want to delete this book?</p>
+            <input type="hidden" id="deleteBookId">
+            <div class="flex space-x-4">
+                <button id="confirmDeleteBtn" onclick="confirmDelete()" class="flex-1 bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition">Delete</button>
+                <button onclick="closeDeleteModal()" class="flex-1 bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600 transition">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentEditId = null;
+
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'} mr-2"></i>${message}`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    function updateCartCount() {
+        try {
+            const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const cartCountEl = document.getElementById('cart-count');
+            if (cartCountEl) cartCountEl.textContent = count;
+        } catch (e) {}
+    }
+
+    (function() {
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            showToast('Please login first', 'error');
+            setTimeout(() => window.location.href = '/login', 1500);
+            return;
+        }
+        document.cookie = `jwt=${token}; path=/; max-age=86400; SameSite=Lax`;
+        loadBooks();
+        updateCartCount();
+    })();
+
+    async function loadBooks() {
+        try {
+            const token = localStorage.getItem('jwt');
+            const response = await fetch('/api/books/seller/me', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (response.ok) {
+                const books = await response.json();
+                displayBooks(books);
+            } else if (response.status === 401) {
+                showToast('Session expired. Please login again.', 'error');
+                setTimeout(() => window.location.href = '/login', 1500);
+            } else {
+                showToast('Failed to load books', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading books:', error);
+            showToast('Network error. Please try again.', 'error');
+        }
+    }
+
+    function displayBooks(books) {
+        const grid = document.getElementById('booksGrid');
+        if (!books || books.length === 0) {
+            grid.innerHTML = `
+                <div class="text-center py-12 col-span-full">
+                    <i class="fas fa-book-open text-6xl text-gray-400 mb-4"></i>
+                    <p class="text-xl text-gray-600 mb-4">You haven't added any books yet</p>
+                    <button onclick="openAddModal()" class="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition">
+                        <i class="fas fa-plus mr-2"></i>Add Your First Book
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        const categoryMap = {1:'Fiction',2:'Non-Fiction',3:'Science',4:'Technology',5:"Children's Books",6:'Academic',7:'History',8:'Self-Help',9:'Business',10:'Art'};
+
+        let html = '';
+        books.forEach(book => {
+            const categoryName = categoryMap[book.categoryId] || 'Uncategorized';
+            let statusClass = '';
+            let statusText = '';
+            
+            switch(book.status) {
+                case 'AVAILABLE':
+                    statusClass = 'status-available';
+                    statusText = 'Available';
+                    break;
+                case 'PENDING_APPROVAL':
+                    statusClass = 'status-pending';
+                    statusText = 'Pending approval';
+                    break;
+                case 'REJECTED':
+                    statusClass = 'status-rejected';
+                    statusText = 'Rejected';
+                    break;
+                case 'SOLD':
+                    statusClass = 'status-sold';
+                    statusText = 'Sold Out';
+                    break;
+                default:
+                    statusClass = 'status-pending';
+                    statusText = book.status;
+            }
+            
+            const hasCover = book.coverImage && book.coverImage !== 'null' && book.coverImage !== '';
+            
+            html += `
+                <div class="book-card">
+                    <div class="w-full h-48 relative overflow-hidden bg-gray-100">
+                        ${hasCover ? 
+                            `<img src="${book.coverImage}" alt="Book cover" class="w-full h-full object-cover" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'w-full h-full bg-gray-100 flex items-center justify-center\'><i class=\'fas fa-book text-5xl text-gray-400\'></i></div>'">` :
+                            `<div class="w-full h-full bg-gray-100 flex items-center justify-center">
+                                <i class="fas fa-book text-5xl text-gray-400"></i>
+                            </div>`
+                        }
+                    </div>
+                    <div class="book-info">
+                        <span class="status-badge ${statusClass} mb-2 inline-block">${statusText}</span>
+                        <h3 class="book-title">${escapeHtml(book.title)}</h3>
+                        <p class="text-gray-600 text-sm">by ${escapeHtml(book.author)}</p>
+                        <p class="book-price mt-2">$${book.finalPrice || book.originalPrice}</p>
+                        <p class="text-sm text-gray-500">Stock: ${book.stock}</p>
+                        <p class="text-xs text-gray-400">Category: ${escapeHtml(categoryName)}</p>
+                    </div>
+                    <div class="book-actions">
+                        <button onclick="openEditModal(${book.id})" class="btn-edit">Edit</button>
+                        <button onclick="openDeleteModal(${book.id})" class="btn-delete">Delete</button>
+                    </div>
+                    ${book.previewPdf ? `<div class="book-actions border-t-0 pt-0">
+                        <a href="${book.previewPdf}" target="_blank" class="btn-edit" style="background-color: #6366f1;">Preview PDF</a>
+                    </div>` : ''}
+                </div>
+            `;
+        });
+        grid.innerHTML = html;
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/"/g, '&quot;');
+    }
+
+    function openAddModal() {
+        currentEditId = null;
+        document.getElementById('modalTitle').textContent = 'Add New Book';
+        document.getElementById('bookForm').reset();
+        document.getElementById('bookId').value = '';
+        document.getElementById('currentPreviewContainer').style.display = 'none';
+        document.getElementById('bookModal').style.display = 'block';
+    }
+
+    async function openEditModal(bookId) {
+        try {
+            const token = localStorage.getItem('jwt');
+            const response = await fetch(`/api/books/${bookId}`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (response.ok) {
+                const book = await response.json();
+                currentEditId = bookId;
+                document.getElementById('modalTitle').textContent = 'Edit Book';
+                document.getElementById('bookId').value = book.id;
+                document.getElementById('title').value = book.title;
+                document.getElementById('author').value = book.author;
+                document.getElementById('description').value = book.description || '';
+                document.getElementById('price').value = book.originalPrice;
+                document.getElementById('stock').value = book.stock;
+                
+                if (book.categoryId) document.getElementById('categoryId').value = book.categoryId;
+
+                const previewContainer = document.getElementById('currentPreviewContainer');
+                const previewLink = document.getElementById('currentPreviewLink');
+                if (book.previewPdf) {
+                    previewContainer.style.display = 'block';
+                    previewLink.href = book.previewPdf;
+                } else {
+                    previewContainer.style.display = 'none';
+                    previewLink.href = '#';
+                }
+
+                document.getElementById('bookModal').style.display = 'block';
+            } else {
+                showToast('Failed to load book details', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading book:', error);
+            showToast('Error loading book details', 'error');
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('bookModal').style.display = 'none';
+    }
+
+    function openDeleteModal(bookId) {
+        document.getElementById('deleteBookId').value = bookId;
+        document.getElementById('deleteModal').style.display = 'block';
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').style.display = 'none';
+    }
+
+    document.getElementById('bookForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            showToast('Please login first', 'error');
+            window.location.href = '/login';
+            return;
+        }
+        
+        const submitBtn = e.submitter;
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="loading-spinner"></span>Saving...';
+        
+        const bookData = {
+            title: document.getElementById('title').value.trim(),
+            author: document.getElementById('author').value.trim(),
+            description: document.getElementById('description').value,
+            price: parseFloat(document.getElementById('price').value),
+            stock: parseInt(document.getElementById('stock').value),
+            categoryId: parseInt(document.getElementById('categoryId').value),
+        };
+
+        const coverInput = document.getElementById('coverImage');
+        const pdfInput = document.getElementById('previewPdf');
+        const coverFile = coverInput.files[0];
+        const pdfFile = pdfInput.files[0];
+
+        let url = currentEditId ? `/api/books/${currentEditId}` : '/api/books';
+        let method = currentEditId ? 'PUT' : 'POST';
+        let options = {
+            method: method,
+            headers: {
+                'Authorization': 'Bearer ' + token
+            }
+        };
+
+        if (coverFile || pdfFile) {
+            url = currentEditId ? `/api/books/${currentEditId}/with-image` : '/api/books/with-image';
+            const formData = new FormData();
+            formData.append('title', bookData.title);
+            formData.append('author', bookData.author);
+            formData.append('description', bookData.description);
+            formData.append('price', bookData.price);
+            formData.append('stock', bookData.stock);
+            formData.append('categoryId', bookData.categoryId);
+            if (coverFile) formData.append('coverImage', coverFile);
+            if (pdfFile) formData.append('previewPdf', pdfFile);
+            options.body = formData;
+        } else {
+            options.headers['Content-Type'] = 'application/json';
+            options.body = JSON.stringify(bookData);
+        }
+
+        try {
+            const response = await fetch(url, options);
+            if (response.ok) {
+                closeModal();
+                loadBooks();
+                showToast(currentEditId ? 'Book updated successfully!' : 'Book added successfully!');
+            } else {
+                const error = await response.text();
+                showToast(error || 'Failed to save book', 'error');
+            }
+        } catch (error) {
+            console.error('Error saving book:', error);
+            showToast('Network error. Please try again.', 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        }
+    });
+
+    async function confirmDelete() {
+        const bookId = document.getElementById('deleteBookId').value;
+        const token = localStorage.getItem('jwt');
+        
+        if (!token) {
+            showToast('Please login first', 'error');
+            window.location.href = '/login';
+            return;
+        }
+        
+        const deleteBtn = document.getElementById('confirmDeleteBtn');
+        const originalText = deleteBtn.textContent;
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = '<span class="loading-spinner"></span>Deleting...';
+        
+        try {
+            const response = await fetch(`/api/books/${bookId}`, {
+                method: 'DELETE',
+                headers: { 
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                closeDeleteModal();
+                loadBooks();
+                showToast(result.message || 'Book deleted successfully!');
+            } else if (response.status === 403) {
+                const error = await response.json();
+                showToast(error.error || 'You do not have permission to delete this book', 'error');
+            } else if (response.status === 401) {
+                showToast('Session expired. Please login again.', 'error');
+                setTimeout(() => window.location.href = '/login', 1500);
+            } else if (response.status === 409) {
+                const error = await response.json();
+                showToast(error.error || 'Cannot delete: Book has existing orders', 'warning');
+                closeDeleteModal();
+            } else {
+                const error = await response.text();
+                showToast(error || 'Failed to delete book', 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting book:', error);
+            showToast('Network error. Please try again.', 'error');
+        } finally {
+            deleteBtn.disabled = false;
+            deleteBtn.textContent = originalText;
+        }
+    }
+
+    // Navigation menu
+    (function() {
+        const token = localStorage.getItem('jwt');
+        const username = localStorage.getItem('username') || 'User';
+        const userMenuContainer = document.getElementById('user-menu-container');
+        
+        if (!userMenuContainer) return;
+        
+        if (token) {
+            fetch('/api/user/roles', { headers: { 'Authorization': 'Bearer ' + token } })
+                .then(r => r.json())
+                .then(data => {
+                    const isSeller = data.roles && data.roles.includes('SELLER');
+                    userMenuContainer.innerHTML = `
+                        <div class="relative group">
+                            <button class="flex items-center space-x-1 text-gray-700 hover:text-red-600">
+                                <i class="fas fa-user-circle text-2xl"></i>
+                                <span class="font-medium">${escapeHtml(username)}</span>
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </button>
+                            <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl hidden group-hover:block z-50">
+                                <div class="px-4 py-2 border-b">
+                                    <p class="text-sm text-gray-500">Signed in as</p>
+                                    <p class="font-semibold">${escapeHtml(username)}</p>
+                                </div>
+                                <a href="/profile" class="block px-4 py-2 hover:bg-gray-100">Profile</a>
+                                <a href="/orders" class="block px-4 py-2 hover:bg-gray-100">My Orders</a>
+                                ${isSeller ? '<a href="/my-books-dashboard" class="block px-4 py-2 hover:bg-gray-100">Sell Books</a>' : '<a href="/seller/become-seller" class="block px-4 py-2 bg-yellow-50 text-yellow-700 hover:bg-yellow-100">Become a Seller</a>'}
+                                <hr>
+                                <a href="#" onclick="logout()" class="block px-4 py-2 text-red-600 hover:bg-gray-100">Logout</a>
+                            </div>
+                        </div>
+                    `;
+                })
+                .catch(err => console.error('Error fetching roles:', err));
+        } else {
+            userMenuContainer.innerHTML = `<a href="/login" class="text-gray-700 hover:text-red-600 px-3 py-2">Login</a><a href="/register" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Register</a>`;
+        }
+        updateCartCount();
+    })();
+
+    function logout() {
+        localStorage.removeItem('jwt');
+        localStorage.removeItem('username');
+        document.cookie = 'jwt=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        window.location.href = '/';
+    }
+</script>
+</body>
+</html>
