@@ -1,15 +1,16 @@
 package com.example.scholarhaven.security;
 
-import com.example.scholarhaven.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -17,63 +18,45 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor
+@RequiredArgsConstructor // Lombok generates a constructor for the final fields (jwtFilter, userDetailsService)
 public class SecurityConfig {
-
     private final JwtAuthenticationFilter jwtFilter;
-    private final CustomUserDetailsService userDetailsService;
+    private final UserDetailsService userDetailsService;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        // Public static resources + uploads and logo
-                        .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico", "/logo-scholarhaven.jpg", "/uploads/**").permitAll()
-
-                        // Public pages
-                        .requestMatchers("/", "/index", "/about", "/contact").permitAll()
-                        .requestMatchers("/login", "/register", "/forgot-password").permitAll()
-                            
-                        // Public book browsing
-                        .requestMatchers("/books", "/books/**", "/books/search").permitAll()
-                        .requestMatchers("/books/category/**", "/books/featured", "/books/new-arrivals").permitAll()
-
-                        // Public API endpoints
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/public/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/books/**").permitAll()
-
-                        // Protected pages - any authenticated user
-                        .requestMatchers("/profile/**", "/cart/**", "/wishlist/**").authenticated()
-                        .requestMatchers("/seller/**").authenticated()
-
-                        // Seller only pages
-                        .requestMatchers("/add-book", "/my-books", "/books/edit/**").hasRole("SELLER")
-                        .requestMatchers("/my-books-dashboard").hasRole("SELLER")
-
-                        // Seller only API
-                        .requestMatchers(HttpMethod.POST, "/api/books").hasRole("SELLER")
-                        .requestMatchers(HttpMethod.PUT, "/api/books/**").hasRole("SELLER")
-                        .requestMatchers(HttpMethod.DELETE, "/api/books/**").hasRole("SELLER")
-
-                        // Admin only
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-
-                        .anyRequest().authenticated()
-                )
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+            .csrf(AbstractHttpConfigurer::disable) // Modern spring security 6 style, replaces .csrf().disable()
+            .authorizeHttpRequests(auth -> auth
+                // open to everyone
+                .requestMatchers("/api/auth/**").permitAll() // login/register
+                // restricted to users with role ADMIN
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers(
+                        "/login",
+                        "/register",
+                        "/forgot-password",
+                        "/reset-password",
+                        "/api/auth/forgot-password",
+                        "/api/auth/reset-password",
+                        "/css/**",
+                        "/js/**",
+                        "/images/**",
+                        "/favicon.ico",
+                        "/*.jpg",
+                        "/*.png"
+                ).permitAll()
+                .anyRequest().authenticated()
+            )
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // No HTTP sessions are created
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class); // Added before the standard username/password filter, so JWT tokens are validated first
 
         return http.build();
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
-        return authConfig.getAuthenticationManager();
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
     }
 
     @Bean
