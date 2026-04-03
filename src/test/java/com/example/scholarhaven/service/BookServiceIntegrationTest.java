@@ -68,8 +68,9 @@ public class BookServiceIntegrationTest {
             return roleRepository.save(role);
         });
 
-        // Create test seller with SELLER role
+        // Create test seller with SELLER role - FIX: Add name field
         testSeller = new User();
+        testSeller.setName("Test Seller");  // ← ADD THIS LINE
         testSeller.setUsername("seller_" + System.currentTimeMillis());
         testSeller.setEmail("seller_" + System.currentTimeMillis() + "@test.com");
         testSeller.setPassword("password");
@@ -79,8 +80,9 @@ public class BookServiceIntegrationTest {
         testSeller.setRoles(sellerRoles);
         testSeller = userRepository.save(testSeller);
 
-        // Create test admin with ADMIN role
+        // Create test admin with ADMIN role - FIX: Add name field
         testAdmin = new User();
+        testAdmin.setName("Test Admin");  // ← ADD THIS LINE
         testAdmin.setUsername("admin_" + System.currentTimeMillis());
         testAdmin.setEmail("admin_" + System.currentTimeMillis() + "@test.com");
         testAdmin.setPassword("password");
@@ -101,7 +103,7 @@ public class BookServiceIntegrationTest {
         testBook.setAuthor("Test Author");
         testBook.setPrice(new BigDecimal("49.99"));
         testBook.setStock(20);
-        testBook.setStatus(Book.BookStatus.AVAILABLE);  // Changed from PENDING_APPROVAL to AVAILABLE
+        testBook.setStatus(Book.BookStatus.AVAILABLE);
         testBook.setSeller(testSeller);
         testBook.setCategory(testCategory);
         testBook = bookRepository.save(testBook);
@@ -279,4 +281,5 @@ public class BookServiceIntegrationTest {
 
         long emptyCount = bookService.getBookCountByCategory(emptyCategory.getId());
         assertEquals(0, emptyCount, "Should have 0 books in the empty category");
-    }}
+    }
+}
