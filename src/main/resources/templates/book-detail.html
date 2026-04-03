@@ -9,6 +9,14 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .book-cover-placeholder {
+            background-color: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
 </head>
 <body class="font-sans bg-gray-50">
 
@@ -16,11 +24,9 @@
     <div class="container mx-auto px-4">
         <div class="flex justify-between items-center h-20">
             <div class="flex items-center space-x-3">
-                 
                 <div class="h-12 w-12 rounded-full bg-gradient-to-r from-red-600 to-red-800 flex items-center justify-center text-white font-bold text-xl ring-2 ring-red-200">
-                   <img src="/logo-scholarhaven.jpg" alt="ScholarHaven Logo" class="h-full w-full object-cover rounded-full">     
+                    <img src="/logo-scholarhaven.jpg" alt="ScholarHaven Logo" class="h-full w-full object-cover rounded-full">     
                 </div>
-              
                 <a href="/" class="text-2xl font-bold text-red-600">ScholarHaven</a>
             </div>
             <div class="flex-1 max-w-xl mx-8">
@@ -33,12 +39,21 @@
                 </form>
             </div>
             <div class="flex items-center space-x-6" id="userMenu">
-                <a href="/cart" class="text-gray-700 hover:text-red-600 relative">
+                <!-- Cart Icon - hidden by default, shown when logged in -->
+                <a href="/cart" id="cartLink" class="text-gray-700 hover:text-red-600 relative hidden">
                     <i class="fas fa-shopping-cart text-xl"></i>
-                    <span class="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                    <span id="cart-count" class="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
                 </a>
                 <div id="user-menu-container"></div>
             </div>
+        </div>
+        <div class="flex space-x-8 py-3 border-t">
+            <a href="/" class="text-gray-700 hover:text-red-600">Home</a>
+            <a href="/books" class="text-gray-700 hover:text-red-600">All Books</a>
+            <!-- My Orders - hidden by default, shown when logged in -->
+            <a href="/orders" id="myOrdersLink" class="text-gray-700 hover:text-red-600 hidden">My Orders</a>
+            <!-- Sell Books link - will be shown/hidden by JavaScript based on seller role -->
+            <a href="/my-books-dashboard" id="sellBooksLink" class="text-gray-700 hover:text-red-600 hidden">Sell Books</a>
         </div>
     </div>
 </nav>
@@ -46,9 +61,19 @@
 <div class="container mx-auto px-4 py-8">
     <div class="bg-white rounded-lg shadow-lg p-6 max-w-6xl mx-auto">
         <div class="grid md:grid-cols-2 gap-8">
-            <div>
-                <img th:src="${book.coverImage ?: 'https://via.placeholder.com/500x500'}"
-                     alt="Book cover" class="w-full rounded-lg">
+            <!-- Cover Image with Gray Placeholder -->
+            <div class="relative overflow-hidden rounded-lg bg-gray-100 min-h-[400px] flex items-center justify-center">
+                <img th:if="${book.coverImage != null and book.coverImage != ''}" 
+                     th:src="${book.coverImage}" 
+                     alt="Book cover" 
+                     class="w-full rounded-lg object-cover"
+                     onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'w-full h-full bg-gray-100 flex flex-col items-center justify-center p-8\'><i class=\'fas fa-book text-8xl text-gray-400 mb-4\'></i><p class=\'text-gray-500 text-lg\'>No Cover Image</p><p class=\'text-gray-400 text-sm\'>Cover not available</p></div>'">
+                <div th:unless="${book.coverImage != null and book.coverImage != ''}" 
+                     class="w-full bg-gray-100 flex flex-col items-center justify-center p-8 min-h-[400px]">
+                    <i class="fas fa-book text-8xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-500 text-lg">No Cover Image</p>
+                    <p class="text-gray-400 text-sm">Cover not available</p>
+                </div>
             </div>
             <div>
                 <h1 class="text-3xl font-bold mb-2" th:text="${book.title}">Book Title</h1>
@@ -65,6 +90,21 @@
                     <span class="ml-2 inline-block bg-blue-200 rounded-full px-3 py-1 text-sm" th:text="'Stock: ' + ${book.stock}">Stock: 10</span>
                 </div>
 
+                <!-- Quantity Selector - Only visible for logged in users -->
+                <div id="quantitySection" class="mb-4 hidden">
+                    <label class="font-bold mb-2 block">Quantity:</label>
+                    <div class="flex items-center space-x-2">
+                        <button type="button" onclick="decreaseQty()" class="w-10 h-10 bg-gray-200 rounded-full hover:bg-gray-300 transition">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <input type="number" id="quantity" value="1" min="1" max="99" 
+                               class="w-20 text-center border rounded-lg py-2 focus:outline-none focus:ring-2 focus:ring-red-400">
+                        <button type="button" onclick="increaseQty()" class="w-10 h-10 bg-gray-200 rounded-full hover:bg-gray-300 transition">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+
                 <div class="mb-6">
                     <h3 class="font-bold mb-2">Description</h3>
                     <p class="text-gray-700" th:text="${book.description}">Description goes here...</p>
@@ -78,10 +118,26 @@
                     <p>Listed on: <span th:text="${book.createdAt != null ? #temporals.format(book.createdAt, 'MMM dd, yyyy') : 'N/A'}">Jan 01, 2024</span></p>
                 </div>
 
+                <!-- Toast Notification -->
+                <div id="toast" class="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg hidden transition-opacity duration-300 z-50">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    <span id="toast-message">Item added to cart!</span>
+                </div>
+
+                <!-- Action Buttons -->
                 <div class="flex space-x-4 mt-6">
-                    <a href="#" class="bg-red-600 text-white px-5 py-3 rounded-lg hover:bg-red-700">
+                    <!-- Add to Cart Button - Only visible for logged in users -->
+                    <button id="addToCartBtn" type="button" onclick="addToCart()" class="bg-red-600 text-white px-5 py-3 rounded-lg hover:bg-red-700 transition hidden">
                         <i class="fas fa-shopping-cart mr-2"></i>Add to Cart
-                    </a>
+                    </button>
+                    
+                    <!-- Login to Add to Cart Message - Visible for non-logged in users -->
+                    <div id="loginToCartMessage" class="hidden">
+                        <a href="/login" class="bg-red-600 text-white px-5 py-3 rounded-lg hover:bg-red-700 transition inline-block">
+                            <i class="fas fa-sign-in-alt mr-2"></i>Login to buy
+                        </a>
+                    </div>
+                    
                     <a th:if="${book.previewPdf}" th:href="${book.previewPdf}" target="_blank" class="bg-indigo-600 text-white px-5 py-3 rounded-lg hover:bg-indigo-700">
                         <i class="fas fa-file-pdf mr-2"></i>Preview PDF
                     </a>
@@ -91,8 +147,6 @@
                 </div>
             </div>
         </div>
-
-    
     </div>
 </div>
 
@@ -102,46 +156,197 @@
     </div>
 </footer>
 
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var bookId = [[${book.id}]];
+    var bookTitle = [[${book.title}]];
+    var bookAuthor = [[${book.author}]];
+    var bookPrice = [[${book.finalPrice}]];
+    var bookCoverImage = [[${book.coverImage}]];
+    var bookStock = [[${book.stock}]];
+    
+    console.log('Book data loaded from server:', {
+        id: bookId,
+        title: bookTitle,
+        author: bookAuthor,
+        price: bookPrice,
+        coverImage: bookCoverImage,
+        stock: bookStock
+    });
+    /*]]>*/
+</script>
+
 <script>
+    function decreaseQty() {
+        let qty = parseInt(document.getElementById('quantity').value);
+        if (qty > 1) {
+            document.getElementById('quantity').value = qty - 1;
+        }
+    }
+
+    function increaseQty() {
+        let qty = parseInt(document.getElementById('quantity').value);
+        let max = bookStock || 99;
+        if (qty < max) {
+            document.getElementById('quantity').value = qty + 1;
+        } else {
+            showToast(`Only ${max} items available in stock`, true);
+        }
+    }
+
+    function getCart() {
+        try { 
+            const cart = localStorage.getItem('cart');
+            return cart ? JSON.parse(cart) : []; 
+        } catch (e) { 
+            console.error('Error reading cart:', e);
+            return []; 
+        }
+    }
+
+    function saveCart(cart) {
+        localStorage.setItem('cart', JSON.stringify(cart));
+        updateCartCount();
+    }
+
+    function updateCartCount() {
+        const cart = getCart();
+        const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
+        const cartCountElement = document.getElementById('cart-count');
+        if (cartCountElement) {
+            cartCountElement.textContent = totalItems;
+        }
+    }
+
+    function showToast(message, isError = false) {
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
+        toastMessage.textContent = message;
+        toast.style.backgroundColor = isError ? '#ef4444' : '#10b981';
+        toast.classList.remove('hidden');
+        setTimeout(() => {
+            toast.classList.add('hidden');
+        }, 2000);
+    }
+
+    function addToCart() {
+        console.log('addToCart called with book:', {
+            id: bookId,
+            title: bookTitle,
+            price: bookPrice
+        });
+        
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            showToast('Please login to add items to cart', true);
+            setTimeout(() => {
+                window.location.href = '/login?redirect=/books/' + bookId;
+            }, 1500);
+            return;
+        }
+        
+        const quantity = parseInt(document.getElementById('quantity').value);
+        
+        if (!bookId || bookId === 0) {
+            console.error('Invalid book ID:', bookId);
+            showToast('Error: Book data not loaded properly. Please refresh the page.', true);
+            return;
+        }
+        
+        if (quantity < 1) {
+            showToast('Please select a valid quantity', true);
+            return;
+        }
+        
+        if (bookStock && quantity > bookStock) {
+            showToast(`Only ${bookStock} items available in stock`, true);
+            return;
+        }
+        
+        const cart = getCart();
+        const existingItem = cart.find(item => item.bookId === bookId);
+        
+        if (existingItem) {
+            existingItem.quantity += quantity;
+        } else {
+            cart.push({
+                bookId: bookId,
+                title: bookTitle,
+                author: bookAuthor,
+                price: bookPrice,
+                coverImage: bookCoverImage,
+                quantity: quantity
+            });
+        }
+        
+        saveCart(cart);
+        showToast(`Added ${quantity} × "${bookTitle}" to cart`);
+        
+        const cartIcon = document.querySelector('.fa-shopping-cart');
+        if (cartIcon) {
+            cartIcon.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+                cartIcon.style.transform = 'scale(1)';
+            }, 200);
+        }
+        
+        console.log('Cart after add:', getCart());
+    }
+
     (function() {
         const token = localStorage.getItem('jwt');
         const username = localStorage.getItem('username') || 'User';
         const userMenuContainer = document.getElementById('user-menu-container');
+        const myOrdersLink = document.getElementById('myOrdersLink');
+        const cartLink = document.getElementById('cartLink');
+        const sellBooksLink = document.getElementById('sellBooksLink');
+        const quantitySection = document.getElementById('quantitySection');
+        const addToCartBtn = document.getElementById('addToCartBtn');
+        const loginToCartMessage = document.getElementById('loginToCartMessage');
 
         if (token) {
             document.cookie = `jwt=${token}; path=/; max-age=86400; SameSite=Lax`;
+            
+            // Show cart link and my orders link for logged in users
+            if (cartLink) cartLink.classList.remove('hidden');
+            if (myOrdersLink) myOrdersLink.classList.remove('hidden');
+            
+            // Show quantity selector and add to cart button for logged in users
+            if (quantitySection) quantitySection.classList.remove('hidden');
+            if (addToCartBtn) addToCartBtn.classList.remove('hidden');
+            
+            // Hide login message for logged in users
+            if (loginToCartMessage) loginToCartMessage.classList.add('hidden');
 
             fetch('/api/user/roles', {
                 headers: { 'Authorization': 'Bearer ' + token }
             })
             .then(res => res.json())
             .then(data => {
-                const isSeller = data.roles.includes('SELLER');
+                const isSeller = data.roles && data.roles.includes('SELLER');
 
                 let menuHtml = `
                     <div class="relative group">
                         <button class="flex items-center space-x-1 text-gray-700 hover:text-red-600">
                             <i class="fas fa-user-circle text-2xl"></i>
-                            <span class="font-medium">${username}</span>
+                            <span class="font-medium">${escapeHtml(username)}</span>
                             <i class="fas fa-chevron-down text-xs"></i>
                         </button>
-                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl hidden group-hover:block">
+                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl hidden group-hover:block z-50">
                             <div class="px-4 py-2 border-b">
                                 <p class="text-sm text-gray-500">Signed in as</p>
-                                <p class="font-semibold">${username}</p>
+                                <p class="font-semibold">${escapeHtml(username)}</p>
                             </div>
                             <a href="/profile" class="block px-4 py-2 hover:bg-gray-100">Profile</a>
-                            <a href="/my-orders" class="block px-4 py-2 hover:bg-gray-100">My Orders</a>
+                            <a href="/orders" class="block px-4 py-2 hover:bg-gray-100">My Orders</a>
                 `;
 
                 if (isSeller) {
-                    menuHtml += `
-                            <a href="/my-books-dashboard" class="block px-4 py-2 hover:bg-gray-100">Sell Books</a>
-                    `;
+                    menuHtml += `<a href="/my-books-dashboard" class="block px-4 py-2 hover:bg-gray-100">Sell Books</a>`;
+                    if (sellBooksLink) sellBooksLink.classList.remove('hidden');
                 } else {
-                    menuHtml += `
-                            <a href="/seller/become-seller" class="block px-4 py-2 bg-yellow-50 text-yellow-700 hover:bg-yellow-100">Become a Seller</a>
-                    `;
+                    menuHtml += `<a href="/seller/become-seller" class="block px-4 py-2 bg-yellow-50 text-yellow-700 hover:bg-yellow-100">Become a Seller</a>`;
+                    if (sellBooksLink) sellBooksLink.classList.add('hidden');
                 }
 
                 menuHtml += `
@@ -152,6 +357,7 @@
                 `;
 
                 userMenuContainer.innerHTML = menuHtml;
+                updateCartCount();
             })
             .catch(() => {
                 userMenuContainer.innerHTML = `
@@ -160,16 +366,37 @@
                         <a href="/register" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Register</a>
                     </div>
                 `;
+                updateCartCount();
             });
         } else {
+            // Not logged in - hide cart link, my orders link, quantity selector, and add to cart button
+            if (cartLink) cartLink.classList.add('hidden');
+            if (myOrdersLink) myOrdersLink.classList.add('hidden');
+            if (sellBooksLink) sellBooksLink.classList.add('hidden');
+            if (quantitySection) quantitySection.classList.add('hidden');
+            if (addToCartBtn) addToCartBtn.classList.add('hidden');
+            
+            // Show login message for non-logged in users
+            if (loginToCartMessage) loginToCartMessage.classList.remove('hidden');
+            
             userMenuContainer.innerHTML = `
                 <div class="flex items-center space-x-2">
                     <a href="/login" class="text-gray-700 hover:text-red-600 px-3 py-2">Login</a>
                     <a href="/register" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Register</a>
                 </div>
             `;
+            
+            updateCartCount();
         }
     })();
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/"/g, '&quot;');
+    }
 
     function logout() {
         localStorage.removeItem('jwt');
