@@ -11,35 +11,33 @@ import org.springframework.web.context.WebApplicationContext;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 public class AdminIntegrationTest {
-
-    private MockMvc mockMvc;
 
     @Autowired
     private WebApplicationContext wac;
 
+    private MockMvc mockMvc;
+
     @BeforeEach
     void setup() {
-        // Build MockMvc manually (Spring Boot 4 no longer auto-configures)
         this.mockMvc = MockMvcBuilders.webAppContextSetup(this.wac).build();
     }
 
     @Test
     void testServerIsRunning() throws Exception {
-        var result = mockMvc.perform(get("/")).andReturn();
-        int status = result.getResponse().getStatus();
-        assertTrue(status >= 200 && status < 400, "Unexpected status: " + status);
-        System.out.println("✅ Server is running: HTTP " + status);
+        mockMvc.perform(get("/"))
+                .andExpect(status().isOk());
+        System.out.println("✅ Server is running");
     }
 
     @Test
     void testPublicEndpointAccessible() throws Exception {
-        var result = mockMvc.perform(get("/api/books")).andReturn();
-        int status = result.getResponse().getStatus();
-        assertTrue(status == 200 || status == 302, "Unexpected status: " + status);
-        System.out.println("✅ Public endpoint /api/books responds with: HTTP " + status);
+        mockMvc.perform(get("/api/books"))
+                .andExpect(status().isOk());
+        System.out.println("✅ Public endpoint /api/books is accessible");
     }
 }
