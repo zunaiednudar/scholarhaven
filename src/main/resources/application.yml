@@ -1,15 +1,15 @@
 spring:
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:scholarhaven}
-    username: ${DB_USERNAME:zunaied}
-    password: ${DB_PASSWORD:zunaied}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:password}
 
   # Java Persistence API - Works with relational databases using Java objects instead of raw SQL
   jpa:
     # Convert object into SQL
     hibernate:
       # Update schema if needed when the app starts
-      ddl-auto: validate
+      ddl-auto: update
     # Print all generated SQL queries in the console for debugging
     show-sql: true
     open-in-view: false
@@ -17,8 +17,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    username: ${MAIL_USERNAME:zunaied4821@gmail.com}
+    password: ${MAIL_PASSWORD:emoemvvpnblmwbxc}
     properties:
       mail:
         smtp:
@@ -28,5 +28,5 @@ spring:
 
 # Replace the contents later
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
   expiration: 86400000
