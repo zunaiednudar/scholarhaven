@@ -9,79 +9,145 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            color: white;
+            z-index: 1001;
+            animation: slideIn 0.3s ease;
+        }
+        .toast-success { background-color: #10b981; }
+        .toast-error { background-color: #ef4444; }
+        .toast-warning { background-color: #f59e0b; }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body class="font-sans bg-gray-50">
+
+<!-- Top Banner -->
+<div class="bg-gradient-to-r from-red-600 to-red-800 text-white text-center py-2 text-sm">
+    <i class="fas fa-truck mr-2"></i> Free Shipping on orders over $50
+</div>
+
 
 <nav class="bg-white shadow-md sticky top-0 z-50">
     <div class="container mx-auto px-4">
         <div class="flex justify-between items-center h-20">
             <div class="flex items-center space-x-3">
-               <div class="h-12 w-12 rounded-full bg-gradient-to-r from-red-600 to-red-800 flex items-center justify-center text-white font-bold text-xl ring-2 ring-red-200">
-                   <img src="/logo-scholarhaven.jpg" alt="ScholarHaven Logo" class="h-full w-full object-cover rounded-full">     
+                <div class="h-12 w-12 rounded-full bg-gradient-to-r from-red-600 to-red-800 flex items-center justify-center text-white font-bold text-xl ring-2 ring-red-200">
+                    <img src="/logo-scholarhaven.jpg" alt="ScholarHaven Logo" class="h-full w-full object-cover rounded-full">
                 </div>
                 <a href="/" class="text-2xl font-bold text-red-600">ScholarHaven</a>
             </div>
             <div class="flex-1 max-w-xl mx-8">
                 <form action="/books" method="get" class="flex">
-                    <input type="hidden" name="categoryId" th:value="${currentCategory}" />
-                    <input type="text" name="q" th:value="${searchQuery}" placeholder="Search by title or author..."
+                    <input type="text" name="q" placeholder="Search by title or author..."
                            class="w-full px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-red-400">
                     <button type="submit" class="bg-red-600 text-white px-6 rounded-r-lg hover:bg-red-700">
                         <i class="fas fa-search"></i>
                     </button>
                 </form>
             </div>
-            <div class="flex items-center space-x-6" id="userMenu">
-                <a href="/cart" class="text-gray-700 hover:text-red-600 relative">
+            <div class="flex items-center space-x-6">
+                <a href="/cart" id="cartLink" class="text-gray-700 hover:text-red-600 relative hidden">
                     <i class="fas fa-shopping-cart text-xl"></i>
-                    <span class="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                    <span id="cart-count" class="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
                 </a>
                 <div id="user-menu-container"></div>
             </div>
         </div>
-        <div class="flex space-x-8 py-3 border-t">
+        <div class="flex space-x-8 py-3 border-t overflow-x-auto">
             <a href="/" class="text-gray-700 hover:text-red-600">Home</a>
             <a href="/books" class="text-gray-700 hover:text-red-600">All Books</a>
-            <a href="/books?categoryId=" class="text-gray-700 hover:text-red-600">Categories</a>
+            <a href="/orders" id="myOrdersLink" class="text-gray-700 hover:text-red-600 hidden">My Orders</a>
+            <a href="/my-books-dashboard" id="sellBooksLink" class="text-gray-700 hover:text-red-600 hidden">Sell Books</a>
         </div>
     </div>
 </nav>
 
 <div class="container mx-auto px-4 py-10">
-    
-        <div class="bg-white p-6 rounded-xl shadow-lg">
-            <h2 class="text-2xl font-bold mb-4">My Profile</h2>
-            <div class="space-y-3">
-                <div>
-                    <p class="text-gray-500 text-sm">Username</p>
-                    <p class="font-semibold" th:text="${user.username}">username</p>
-                </div>
-                <div>
-                    <p class="text-gray-500 text-sm">Email</p>
-                    <p class="font-semibold" th:text="${user.email}">email@example.com</p>
-                </div>
-                <div>
-                    <p class="text-gray-500 text-sm">Account Status</p>
-                    <p class="font-semibold" th:text="${user.enabled} ? 'Active' : 'Disabled'">Active</p>
-                </div>
-                <div>
-                    <p class="text-gray-500 text-sm">Roles</p>
-                    <p class="font-semibold" th:text="${rolesList}">BUYER</p>
-                </div>
-                <div>
-                    <p class="text-gray-500 text-sm">Books listed</p>
-                    <p class="font-semibold" th:text="${bookCount}">0</p>
-                </div>
+    <div class="bg-white p-8 rounded-xl shadow-lg max-w-2xl mx-auto">
+        <div class="flex items-center space-x-4 mb-6">
+            <div class="h-20 w-20 rounded-full bg-gradient-to-r from-red-600 to-red-800 flex items-center justify-center text-white font-bold text-2xl">
+                <i class="fas fa-user text-3xl"></i>
             </div>
-            <div class="mt-6">
-                <form action="/profile/delete" method="post" onsubmit="return confirm('Delete your account? This cannot be undone.');">
-                    <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
-                        Delete My Account
-                    </button>
-                </form>
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">My Profile</h1>
+                <p class="text-gray-500">Manage your account information</p>
             </div>
         </div>
 
+        <div class="border-t pt-6 space-y-4">
+            <div class="grid grid-cols-3 gap-4 py-3 border-b">
+                <div class="text-gray-500 font-medium">Full Name</div>
+                <div class="col-span-2 font-semibold text-gray-800" th:text="${user.name}">Loading...</div>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-4 py-3 border-b">
+                <div class="text-gray-500 font-medium">Username</div>
+                <div class="col-span-2 font-semibold text-gray-800" th:text="${user.username}">Loading...</div>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-4 py-3 border-b">
+                <div class="text-gray-500 font-medium">Email</div>
+                <div class="col-span-2 font-semibold text-gray-800" th:text="${user.email}">Loading...</div>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-4 py-3 border-b">
+                <div class="text-gray-500 font-medium">Account Status</div>
+                <div class="col-span-2">
+                    <span th:if="${user.enabled}" class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">Active</span>
+                    <span th:unless="${user.enabled}" class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-semibold">Disabled</span>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-4 py-3 border-b">
+                <div class="text-gray-500 font-medium">Roles</div>
+                <div class="col-span-2">
+                    <span th:each="role : ${user.roles}" 
+                          class="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold mr-2 mb-1"
+                          th:text="${role.name}">BUYER</span>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-4 py-3 border-b">
+                <div class="text-gray-500 font-medium">Books Listed</div>
+                <div class="col-span-2 font-semibold text-gray-800" th:text="${bookCount}">0</div>
+            </div>
+        </div>
+
+        <div class="mt-8 pt-6 border-t flex space-x-4">
+            <a href="/" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Home
+            </a>
+            
+            <!-- Delete Account Button with AJAX -->
+            <button id="deleteAccountBtn" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                <i class="fas fa-trash-alt mr-2"></i>Delete My Account
+            </button>
+        </div>
+    </div>
 </div>
 
 <footer class="bg-gray-900 text-white pt-8 pb-4 mt-12">
@@ -91,6 +157,98 @@
 </footer>
 
 <script>
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-exclamation-triangle'} mr-2"></i>${message}`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    function updateCartCount() {
+        try {
+            const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const cartCountEl = document.getElementById('cart-count');
+            if (cartCountEl) cartCountEl.textContent = count;
+        } catch (e) {}
+    }
+
+    // Delete Account Function
+    document.addEventListener('DOMContentLoaded', function() {
+        const deleteBtn = document.getElementById('deleteAccountBtn');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', async function() {
+                const token = localStorage.getItem('jwt');
+                const username = localStorage.getItem('username');
+                
+                if (!token) {
+                    showToast('Please login first', 'error');
+                    setTimeout(() => window.location.href = '/login', 1500);
+                    return;
+                }
+                
+                // Check if trying to delete admin account
+                if (username === 'admin') {
+                    showToast('Admin accounts cannot be deleted', 'error');
+                    return;
+                }
+                
+                if (!confirm('⚠️ Are you sure you want to delete your account?\n\nThis action CANNOT be undone!\n\n• All your books will be deleted\n• Your orders will be removed\n• Your profile will be permanently erased\n\nClick OK to confirm deletion.')) {
+                    return;
+                }
+                
+                // Disable button and show loading
+                deleteBtn.disabled = true;
+                deleteBtn.innerHTML = '<span class="loading-spinner"></span>Deleting...';
+                
+                try {
+                    // Try the API endpoint first
+                    const response = await fetch('/api/profile/delete', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer ' + token,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok && data.success) {
+                        showToast('Account deleted successfully!', 'success');
+                        // Clear localStorage
+                        localStorage.removeItem('jwt');
+                        localStorage.removeItem('username');
+                        document.cookie = 'jwt=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+                        // Redirect to logout after 1.5 seconds
+                        setTimeout(() => {
+                            window.location.href = '/logout';
+                        }, 1500);
+                    } else if (response.status === 403) {
+                        showToast(data.error || 'You cannot delete this account', 'error');
+                        deleteBtn.disabled = false;
+                        deleteBtn.innerHTML = '<i class="fas fa-trash-alt mr-2"></i>Delete My Account';
+                    } else {
+                        showToast(data.error || 'Failed to delete account', 'error');
+                        deleteBtn.disabled = false;
+                        deleteBtn.innerHTML = '<i class="fas fa-trash-alt mr-2"></i>Delete My Account';
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    // Fallback to form submission
+                    showToast('Processing...', 'warning');
+                    // Create a form and submit
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/profile/delete';
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        }
+    });
+
+    // Navigation menu
     (function() {
         const token = localStorage.getItem('jwt');
         const username = localStorage.getItem('username') || 'User';
@@ -104,25 +262,29 @@
             })
             .then(res => res.json())
             .then(data => {
-                const isSeller = data.roles.includes('SELLER');
+                const isSeller = data.roles && data.roles.includes('SELLER');
 
                 let menuHtml = `
                     <div class="relative group">
                         <button class="flex items-center space-x-1 text-gray-700 hover:text-red-600">
                             <i class="fas fa-user-circle text-2xl"></i>
-                            <span class="font-medium">${username}</span>
+                            <span class="font-medium">${escapeHtml(username)}</span>
                             <i class="fas fa-chevron-down text-xs"></i>
                         </button>
-                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl hidden group-hover:block">
+                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl hidden group-hover:block z-50">
                             <div class="px-4 py-2 border-b">
                                 <p class="text-sm text-gray-500">Signed in as</p>
-                                <p class="font-semibold">${username}</p>
+                                <p class="font-semibold">${escapeHtml(username)}</p>
                             </div>
                             <a href="/profile" class="block px-4 py-2 hover:bg-gray-100">Profile</a>
-                            
-                            <a href="/my-books-dashboard" class="block px-4 py-2 hover:bg-gray-100">Sell Books</a>
-                             <a href="/my-orders" class="block px-4 py-2 hover:bg-gray-100">My Orders</a>
+                            <a href="/orders" class="block px-4 py-2 hover:bg-gray-100">My Orders</a>
                 `;
+
+                if (isSeller) {
+                    menuHtml += `<a href="/my-books-dashboard" class="block px-4 py-2 hover:bg-gray-100">Sell Books</a>`;
+                } else {
+                    menuHtml += `<a href="/seller/become-seller" class="block px-4 py-2 bg-yellow-50 text-yellow-700 hover:bg-yellow-100">Become a Seller</a>`;
+                }
 
                 menuHtml += `
                             <hr>
@@ -132,6 +294,7 @@
                 `;
 
                 userMenuContainer.innerHTML = menuHtml;
+                updateCartCount();
             })
             .catch(() => {
                 userMenuContainer.innerHTML = `
@@ -148,8 +311,17 @@
                     <a href="/register" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Register</a>
                 </div>
             `;
+            updateCartCount();
         }
     })();
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/"/g, '&quot;');
+    }
 
     function logout() {
         localStorage.removeItem('jwt');
@@ -158,7 +330,5 @@
         window.location.href = '/';
     }
 </script>
-
 </body>
 </html>
-
