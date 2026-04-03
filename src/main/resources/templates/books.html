@@ -9,6 +9,14 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .book-cover-placeholder {
+            background-color: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
 </head>
 <body class="font-sans bg-gray-50">
 
@@ -32,9 +40,10 @@
                 </form>
             </div>
             <div class="flex items-center space-x-6" id="userMenu">
-                <a href="/cart" class="text-gray-700 hover:text-red-600 relative">
+                <!-- Cart Icon - hidden by default, shown when logged in -->
+                <a href="/cart" id="cartLink" class="text-gray-700 hover:text-red-600 relative hidden">
                     <i class="fas fa-shopping-cart text-xl"></i>
-                    <span class="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                    <span id="cart-count" class="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
                 </a>
                 <div id="user-menu-container"></div>
             </div>
@@ -42,16 +51,19 @@
         <div class="flex space-x-8 py-3 border-t">
             <a href="/" class="text-gray-700 hover:text-red-600">Home</a>
             <a href="/books" class="text-red-600 font-medium">All Books</a>
-           
+            <!-- My Orders - hidden by default, shown when logged in -->
+            <a href="/orders" id="myOrdersLink" class="text-gray-700 hover:text-red-600 hidden">My Orders</a>
+            <!-- Sell Books - hidden by default, shown when logged in as seller -->
+            <a href="/my-books-dashboard" id="sellBooksLink" class="text-gray-700 hover:text-red-600 hidden">Sell Books</a>
         </div>
     </div>
 </nav>
 
 <div class="container mx-auto px-4 py-8">
-    <div class="flex gap-8">
+    <div class="flex flex-col lg:flex-row gap-8">
         <!-- Category Sidebar -->
-        <div class="w-64 flex-shrink-0">
-            <div class="bg-white rounded-lg shadow p-4">
+        <div class="w-full lg:w-64 flex-shrink-0">
+            <div class="bg-white rounded-lg shadow p-4 sticky top-24">
                 <h3 class="font-bold text-lg mb-3">Categories</h3>
                 <ul class="space-y-2">
                     <li>
@@ -66,7 +78,7 @@
                            class="flex justify-between items-center hover:text-red-600"
                            th:classappend="${currentCategory == cat.id} ? 'text-red-600 font-medium' : 'text-gray-700'">
                             <span th:text="${cat.name}">Fiction</span>
-                            <span class="text-sm bg-gray-100 px-2 py-1 rounded" th:text="${#lists.size(cat.books)}">25</span>
+                            <span class="text-sm bg-gray-100 px-2 py-1 rounded" th:text="${bookCounts[cat.id] ?: 0}">25</span>
                         </a>
                     </li>
                 </ul>
@@ -77,26 +89,43 @@
         <div class="flex-1">
             <h1 class="text-3xl font-bold mb-6" th:text="${title}">All Books</h1>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                <div th:each="book : ${books}" class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
-                    <img th:src="${book.coverImage ?: 'https://via.placeholder.com/200x250'}"
-                         alt="Book cover" class="w-full h-48 object-cover">
-                    <div class="p-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div th:each="book : ${books}" class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition flex flex-col">
+                    <!-- Cover Image with Gray Placeholder -->
+                    <div class="w-full h-48 relative overflow-hidden bg-gray-100">
+                        <img th:if="${book.coverImage != null and book.coverImage != ''}" 
+                             th:src="${book.coverImage}" 
+                             alt="Book cover" 
+                             class="w-full h-full object-cover"
+                             onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'w-full h-full bg-gray-100 flex items-center justify-center\'><i class=\'fas fa-book text-5xl text-gray-400\'></i></div>'">
+                        <div th:unless="${book.coverImage != null and book.coverImage != ''}" 
+                             class="w-full h-full bg-gray-100 flex items-center justify-center">
+                            <i class="fas fa-book text-5xl text-gray-400"></i>
+                        </div>
+                    </div>
+                    <div class="p-4 flex flex-col flex-grow">
                         <h3 class="font-bold text-lg mb-1 truncate" th:text="${book.title}">Book Title</h3>
                         <p class="text-gray-600 text-sm mb-2 truncate" th:text="${book.author}">Author Name</p>
-                        <p class="text-xs text-gray-500 mb-2" th:text="${book.categoryName}">Category</p>
+                        <p class="text-xs text-gray-500 mb-3" th:text="${book.categoryName}">Category</p>
                       
-                        <div class="flex justify-between items-center gap-2">
+                        <div class="flex justify-between items-center gap-2 mb-4">
                             <span class="text-red-600 font-bold text-xl" th:text="'$' + ${book.finalPrice}">$29.99</span>
-                            <a th:href="@{'/books/' + ${book.id}}" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">View</a>
-                
-                            <a th:href="@{'/books/' + ${book.id}}" class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">Order Now</a>
+                            <a th:href="@{'/books/' + ${book.id}}" 
+                               class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700 transition">
+                                View Details
+                            </a>
                         </div>
+                        
+                        <a th:href="@{'/books/' + ${book.id}}" 
+                           class="block w-full bg-green-600 text-white py-2.5 rounded text-sm font-medium text-center hover:bg-green-700 transition-colors">
+                            <i class="fas fa-shopping-cart mr-2"></i>Order Now
+                        </a>
                     </div>
                 </div>
             </div>
 
             <div th:if="${books.empty}" class="text-center py-12">
+                <i class="fas fa-book-open text-6xl text-gray-300 mb-4"></i>
                 <p class="text-gray-500 text-xl">No books found in this category.</p>
                 <a href="/books" class="text-red-600 hover:text-red-700 mt-4 inline-block">View all books</a>
             </div>
@@ -111,72 +140,102 @@
 </footer>
 
 <script>
+    function updateCartCount() {
+        try {
+            const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const cartCountEl = document.getElementById('cart-count');
+            if (cartCountEl) cartCountEl.textContent = count;
+        } catch (e) {}
+    }
+
     (function() {
         const token = localStorage.getItem('jwt');
         const username = localStorage.getItem('username') || 'User';
         const userMenuContainer = document.getElementById('user-menu-container');
+        const sellBooksLink = document.getElementById('sellBooksLink');
+        const myOrdersLink = document.getElementById('myOrdersLink');
+        const cartLink = document.getElementById('cartLink');
 
         if (token) {
             document.cookie = `jwt=${token}; path=/; max-age=86400; SameSite=Lax`;
+            
+            // Show cart link and my orders link for logged in users
+            if (cartLink) cartLink.classList.remove('hidden');
+            if (myOrdersLink) myOrdersLink.classList.remove('hidden');
 
             fetch('/api/user/roles', {
                 headers: { 'Authorization': 'Bearer ' + token }
             })
-                .then(res => res.json())
-                .then(data => {
-                    const isSeller = data.roles.includes('SELLER');
+            .then(res => res.json())
+            .then(data => {
+                const isSeller = data.roles && data.roles.includes('SELLER');
 
-                    let menuHtml = `
-                        <div class="relative group">
-                            <button class="flex items-center space-x-1 text-gray-700 hover:text-red-600">
-                                <i class="fas fa-user-circle text-2xl"></i>
-                                <span class="font-medium">${username}</span>
-                                <i class="fas fa-chevron-down text-xs"></i>
-                            </button>
-                            <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl hidden group-hover:block">
-                                <div class="px-4 py-2 border-b">
-                                    <p class="text-sm text-gray-500">Signed in as</p>
-                                    <p class="font-semibold">${username}</p>
-                                </div>
-                                <a href="/profile" class="block px-4 py-2 hover:bg-gray-100">Profile</a>
-                                <a href="/my-orders" class="block px-4 py-2 hover:bg-gray-100">My Orders</a>
-                    `;
-
-                    if (isSeller) {
-                        menuHtml += `
-                                <a href="/my-books-dashboard" class="block px-4 py-2 hover:bg-gray-100">Sell Books</a>
-                        `;
-                    } else {
-                        menuHtml += `
-                                <a href="/seller/become-seller" class="block px-4 py-2 bg-yellow-50 text-yellow-700 hover:bg-yellow-100">Become a Seller</a>
-                        `;
-                    }
-
-                    menuHtml += `
-                                <hr>
-                                <a href="#" onclick="logout()" class="block px-4 py-2 text-red-600 hover:bg-gray-100">Logout</a>
+                let menuHtml = `
+                    <div class="relative group">
+                        <button class="flex items-center space-x-1 text-gray-700 hover:text-red-600">
+                            <i class="fas fa-user-circle text-2xl"></i>
+                            <span class="font-medium">${escapeHtml(username)}</span>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl hidden group-hover:block z-50">
+                            <div class="px-4 py-2 border-b">
+                                <p class="text-sm text-gray-500">Signed in as</p>
+                                <p class="font-semibold">${escapeHtml(username)}</p>
                             </div>
-                        </div>
-                    `;
+                            <a href="/profile" class="block px-4 py-2 hover:bg-gray-100">Profile</a>
+                            <a href="/orders" class="block px-4 py-2 hover:bg-gray-100">My Orders</a>
+                `;
 
-                    userMenuContainer.innerHTML = menuHtml;
-                })
-                .catch(() => {
-                    userMenuContainer.innerHTML = `
-                        <div class="flex items-center space-x-2">
-                            <a href="/login" class="text-gray-700 hover:text-red-600 px-3 py-2">Login</a>
-                            <a href="/register" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Register</a>
+                if (isSeller) {
+                    menuHtml += `<a href="/my-books-dashboard" class="block px-4 py-2 hover:bg-gray-100">Sell Books</a>`;
+                    if (sellBooksLink) sellBooksLink.classList.remove('hidden');
+                } else {
+                    menuHtml += `<a href="/seller/become-seller" class="block px-4 py-2 bg-yellow-50 text-yellow-700 hover:bg-yellow-100">Become a Seller</a>`;
+                    if (sellBooksLink) sellBooksLink.classList.add('hidden');
+                }
+
+                menuHtml += `
+                            <hr>
+                            <a href="#" onclick="logout()" class="block px-4 py-2 text-red-600 hover:bg-gray-100">Logout</a>
                         </div>
-                    `;
-                });
+                    </div>
+                `;
+
+                userMenuContainer.innerHTML = menuHtml;
+                updateCartCount();
+            })
+            .catch(() => {
+                userMenuContainer.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <a href="/login" class="text-gray-700 hover:text-red-600 px-3 py-2">Login</a>
+                        <a href="/register" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Register</a>
+                    </div>
+                `;
+            });
+        } else {
+            // Not logged in - hide cart, my orders, and sell books links
+            if (cartLink) cartLink.classList.add('hidden');
+            if (myOrdersLink) myOrdersLink.classList.add('hidden');
+            if (sellBooksLink) sellBooksLink.classList.add('hidden');
+            
             userMenuContainer.innerHTML = `
                 <div class="flex items-center space-x-2">
                     <a href="/login" class="text-gray-700 hover:text-red-600 px-3 py-2">Login</a>
                     <a href="/register" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Register</a>
                 </div>
             `;
+            updateCartCount();
         }
     })();
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/"/g, '&quot;');
+    }
 
     function logout() {
         localStorage.removeItem('jwt');
