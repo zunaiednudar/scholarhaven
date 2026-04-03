@@ -52,6 +52,7 @@ public class BookController {
 
         model.addAttribute("books", books);
         model.addAttribute("categories", categoryService.getAllCategories());
+        model.addAttribute("bookCounts", categoryService.getBookCountsByCategory());
         return "books";
     }
 
@@ -73,48 +74,6 @@ public class BookController {
         model.addAttribute("book", book);
         model.addAttribute("categories", categoryService.getAllCategories());
         return "book-detail";
-    }
-
-    @GetMapping("/books/featured")
-    public String featuredBooks(Model model) {
-        List<BookResponseDTO> books = bookService.getFeaturedBooks();
-        model.addAttribute("books", books);
-        model.addAttribute("title", "Featured Books");
-        model.addAttribute("categories", categoryService.getAllCategories());
-        return "books";
-    }
-
-    @GetMapping("/books/new-arrivals")
-    public String newArrivals(Model model) {
-        List<BookResponseDTO> books = bookService.getRecentBooks(20);
-        model.addAttribute("books", books);
-        model.addAttribute("title", "New Arrivals");
-        model.addAttribute("categories", categoryService.getAllCategories());
-        return "books";
-    }
-
-    @GetMapping("/add-book")
-    public String showAddBookForm(Model model) {
-        model.addAttribute("categories", categoryService.getAllCategories());
-        model.addAttribute("pricingStrategies", bookService.getAvailablePricingStrategies());
-        return "add-book";
-    }
-
-    @GetMapping("/my-books")
-    public String myBooks(@AuthenticationPrincipal UserDetails userDetails, Model model) {
-        if (userDetails == null) {
-            return "redirect:/login";
-        }
-
-        try {
-            User seller = userService.findByUsername(userDetails.getUsername());
-            List<BookResponseDTO> books = bookService.getBooksBySeller(seller);
-            model.addAttribute("books", books);
-            model.addAttribute("categories", categoryService.getAllCategories());
-            return "my-books";
-        } catch (Exception e) {
-            return "redirect:/login?error=database";
-        }
     }
 
     @GetMapping("/books/edit/{id}")
