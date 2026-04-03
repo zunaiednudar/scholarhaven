@@ -8,10 +8,10 @@ import com.example.scholarhaven.service.BookService;
 import com.example.scholarhaven.service.CategoryService;
 import com.example.scholarhaven.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -199,11 +200,37 @@ public class BookApiController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('SELLER', 'ADMIN')")
-    public ResponseEntity<Void> deleteBook(@PathVariable Long id,
-                                           @AuthenticationPrincipal UserDetails userDetails) {
-        User user = userService.findByUsername(userDetails.getUsername());
-        bookService.deleteBook(id, user);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> deleteBook(@PathVariable Long id,
+                                        @AuthenticationPrincipal UserDetails userDetails) {
+        System.out.println("========== DELETE BOOK REQUEST ==========");
+        System.out.println("Book ID: " + id);
+        
+        if (userDetails == null) {
+            System.out.println("❌ User not authenticated");
+            return ResponseEntity.status(401).body(Map.of("error", "Not authenticated"));
+        }
+        
+        try {
+            User user = userService.findByUsername(userDetails.getUsername());
+            System.out.println("User: " + user.getUsername() + " (ID: " + user.getId() + ")");
+            System.out.println("User roles: " + user.getRoles().stream().map(r -> r.getName()).toList());
+            
+            bookService.deleteBook(id, user);
+            System.out.println("✅ Book deleted successfully");
+            System.out.println("==========================================\n");
+            return ResponseEntity.ok(Map.of("message", "Book deleted successfully. Any associated orders have been removed."));
+            
+        } catch (RuntimeException e) {
+            System.out.println("❌ Error: " + e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+        } catch (Exception e) {
+            System.out.println("❌ Unexpected error: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Internal server error: " + e.getMessage()));
+        }
     }
 
     @GetMapping("/seller/me")
