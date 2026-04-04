@@ -166,4 +166,4 @@ Branch protection rules should block direct pushes to `main` and require at leas
 ## Links
 
 - Repository: [https://github.com/zunaiednudar/scholarhaven](https://github.com/zunaiednudar/scholarhaven)
-- Deployment URL: *(add after deploying on Render)*
+- Deployment URL: [https://scholarhaven.onrender.com](https://scholarhaven.onrender.com)
