@@ -28,7 +28,6 @@ public class SellerBookValidationStrategy implements BookValidationStrategy {
 
     @Override
     public boolean canPerformAction(User user) {
-        // ✅ FIXED: Use hasRole() to check for SELLER or ADMIN
         return user != null && (user.hasRole("SELLER") || user.hasRole("ADMIN"));
     }
 }
