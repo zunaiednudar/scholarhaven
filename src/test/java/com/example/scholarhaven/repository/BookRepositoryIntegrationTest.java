@@ -1,4 +1,4 @@
-```java
+
 package com.example.scholarhaven.repository;
 
 import com.example.scholarhaven.entity.Book;
