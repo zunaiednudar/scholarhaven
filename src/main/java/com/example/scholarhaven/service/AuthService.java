@@ -58,7 +58,7 @@ public class AuthService {
         UserPrincipal userPrincipal = new UserPrincipal(user);
         String token = jwtService.generateToken(userPrincipal);
 
-        return new AuthResponse(token);
+        return new AuthResponse(token, user.getUsername());
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -76,6 +76,6 @@ public class AuthService {
         // Generate and return JWT token
         String token = jwtService.generateToken(userPrincipal);
 
-        return new AuthResponse(token);
+        return new AuthResponse(token, userPrincipal.getUsername());
     }
 }
