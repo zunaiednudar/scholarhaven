@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - ScholarHaven</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body class="font-sans bg-neutral-800 flex items-center justify-center h-screen">
+<div class="bg-white p-8 rounded-xl w-full max-w-md">
+    <div class="flex flex-col items-center mb-6">
+        <div class="h-32 w-32 rounded-full bg-gradient-to-r from-red-600 to-red-800 flex items-center justify-center text-white font-bold text-3xl ring-2 ring-red-200 mb-4">
+            <img src="/logo-scholarhaven.jpg" alt="SH">
+        </div>
+        <h2 class="text-4xl font-semibold">Login</h2>
+        <h1 class="text-2xl text-red-800">ScholarHaven</h1>
+    </div>
+
+    <hr class="mb-8" />
+
+    <div id="errorMessage" class="bg-red-100 text-red-700 p-2 rounded mb-4 hidden"></div>
+    <div id="successMessage" class="bg-green-100 text-green-700 p-2 rounded mb-4 hidden"></div>
+
+    <form id="loginForm" class="space-y-4">
+        <div>
+            <label for="username" class="text-gray-700">Username</label>
+            <input type="text" id="username" name="username" required class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <div>
+            <div class="flex flex-row justify-between items-center">
+                <label for="password" class="block text-gray-700">Password</label>
+                <a href="/forgot-password" class="text-blue-500 hover:text-blue-600 cursor-pointer">Forgot Password?</a>
+            </div>
+            <input type="password" id="password" name="password" required class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <button type="submit" id="submitBtn" class="w-full bg-blue-500 text-white font-semibold p-2 rounded hover:bg-blue-600 focus:ring-2 focus:ring-blue-400">
+            Login
+        </button>
+
+        <p class="text-sm text-gray-500 text-center mt-4">
+            Don't have an account?
+            <a href="/register" class="text-blue-500 hover:text-blue-600">Register</a>
+        </p>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const loginForm = document.getElementById('loginForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+
+        loginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            // Disable button
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Logging in...';
+
+            // Clear messages
+            errorMessage.classList.add('hidden');
+            successMessage.classList.add('hidden');
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Store in localStorage
+                    localStorage.setItem('jwt', data.token);
+                    localStorage.setItem('username', username);
+
+                    // Set cookie for page navigation
+                    document.cookie = `jwt=${data.token}; path=/; max-age=86400; SameSite=Lax`;
+
+                    successMessage.textContent = 'Login successful! Redirecting...';
+                    successMessage.classList.remove('hidden');
+                    
+                    setTimeout(() => {
+                        // Redirect based on username
+                        if (username === 'admin') {
+                            window.location.href = '/admin/dashboard';
+                        } else {
+                           
+                                    window.location.href = '/';
+                                }
+                         
+                    }, 1000);
+                } else {
+                    errorMessage.textContent = data.message || 'Login failed';
+                    errorMessage.classList.remove('hidden');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Login';
+                }
+            } catch (error) {
+                errorMessage.textContent = 'Network error. Please try again.';
+                errorMessage.classList.remove('hidden');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Login';
+            }
+        });
+    });
+</script>
+
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                fontFamily: {
+                    sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+                }
+            }
+        }
+    }
+</script>
+</body>
+</html>
