@@ -1,0 +1,32 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:scholarhaven}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:password}
+
+
+  jpa:
+  
+    hibernate:
+      
+      ddl-auto: update
+    
+    show-sql: true
+    open-in-view: false
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:zunaied4821@gmail.com}
+    password: ${MAIL_PASSWORD:emoemvvpnblmwbxc}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+
+jwt:
+  secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+  expiration: 86400000

@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Cart - ScholarHaven</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #10b981;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 1000;
+            transition: opacity 0.3s ease;
+        }
+        .toast.hidden { opacity: 0; visibility: hidden; }
+        .toast.error { background-color: #ef4444; }
+        .cart-item-enter {
+            animation: fadeInLeft 0.3s ease-out;
+        }
+        @keyframes fadeInLeft {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .book-cover-placeholder {
+            background-color: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+<!-- Top Banner -->
+<div class="bg-gradient-to-r from-red-600 to-red-800 text-white text-center py-2 text-sm">
+    <i class="fas fa-truck mr-2"></i> Free Shipping on orders over $50
+</div>
+
+<!-- Navigation -->
+
+<nav class="bg-white shadow-md sticky top-0 z-50">
+    <div class="container mx-auto px-4">
+        <div class="flex justify-between items-center h-20">
+            <div class="flex items-center space-x-3">
+                <div class="h-12 w-12 rounded-full bg-gradient-to-r from-red-600 to-red-800 flex items-center justify-center text-white font-bold text-xl ring-2 ring-red-200">
+                    <img src="/logo-scholarhaven.jpg" alt="ScholarHaven Logo" class="h-full w-full object-cover rounded-full">
+                </div>
+                <a href="/" class="text-2xl font-bold text-red-600">ScholarHaven</a>
+            </div>
+            <div class="flex-1 max-w-xl mx-8">
+                <form action="/books" method="get" class="flex">
+                    <input type="text" name="q" placeholder="Search by title or author..."
+                           class="w-full px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-red-400">
+                    <button type="submit" class="bg-red-600 text-white px-6 rounded-r-lg hover:bg-red-700">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
+            <div class="flex items-center space-x-6">
+                <a href="/cart" id="cartLink" class="text-gray-700 hover:text-red-600 relative hidden">
+                    <i class="fas fa-shopping-cart text-xl"></i>
+                    <span id="cart-count" class="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                </a>
+                <div id="user-menu-container"></div>
+            </div>
+        </div>
+        <div class="flex space-x-8 py-3 border-t overflow-x-auto">
+            <a href="/" class="text-gray-700 hover:text-red-600">Home</a>
+            <a href="/books" class="text-gray-700 hover:text-red-600">All Books</a>
+            <a href="/orders" id="myOrdersLink" class="text-gray-700 hover:text-red-600 hidden">My Orders</a>
+            <a href="/my-books-dashboard" id="sellBooksLink" class="text-gray-700 hover:text-red-600 hidden">Sell Books</a>
+        </div>
+    </div>
+</nav>
+
+<!-- Breadcrumb -->
+<div class="container mx-auto px-4 py-4">
+    <nav class="text-sm text-gray-500">
+        <a href="/" class="hover:text-red-600">Home</a>
+        <i class="fas fa-chevron-right mx-2 text-xs"></i>
+        <span class="text-gray-800 font-medium">Shopping Cart</span>
+    </nav>
+</div>
+
+<!-- Main Content -->
+<div class="container mx-auto px-4 pb-16">
+    <h1 class="text-3xl font-bold text-gray-800 mb-8">
+        <i class="fas fa-shopping-cart text-red-600 mr-3"></i>Shopping Cart
+        <span id="cart-item-count" class="ml-2 text-lg font-normal text-gray-500">(0 items)</span>
+    </h1>
+
+    <!-- Loading State -->
+    <div id="loading-state" class="text-center py-12">
+        <i class="fas fa-spinner fa-spin text-4xl text-red-600"></i>
+        <p class="mt-4 text-gray-600">Loading your cart...</p>
+    </div>
+
+    <!-- Empty Cart State -->
+    <div id="empty-cart" class="hidden text-center py-24 bg-white rounded-2xl shadow-sm">
+        <div class="bg-red-50 w-28 h-28 rounded-full flex items-center justify-center mx-auto mb-6">
+            <i class="fas fa-shopping-cart text-5xl text-red-300"></i>
+        </div>
+        <h2 class="text-2xl font-semibold text-gray-700 mb-2">Your cart is empty</h2>
+        <p class="text-gray-500 mb-8">Looks like you haven't added any books yet.</p>
+        <a href="/books" class="bg-red-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors inline-block">
+            <i class="fas fa-book-open mr-2"></i>Browse Books
+        </a>
+    </div>
+
+    <!-- Cart Content -->
+    <div id="cart-content" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Cart Items -->
+        <div class="lg:col-span-2 space-y-4" id="cart-items-container"></div>
+
+        <!-- Order Summary -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-2xl shadow-sm p-6 sticky top-28">
+                <h2 class="text-xl font-bold text-gray-800 mb-6 pb-4 border-b">Order Summary</h2>
+                <div class="space-y-3 text-sm text-gray-600 mb-6">
+                    <div class="flex justify-between">
+                        <span>Subtotal (<span id="summary-count">0</span> items)</span>
+                        <span id="summary-subtotal" class="font-medium text-gray-800">$0.00</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Shipping</span>
+                        <span id="summary-shipping" class="font-medium text-green-600">Free</span>
+                    </div>
+                    <div id="shipping-notice" class="hidden text-xs text-gray-400 bg-gray-50 rounded-lg p-2">
+                        <i class="fas fa-info-circle mr-1 text-red-400"></i>Add <span id="shipping-remaining"></span> more to get free shipping
+                    </div>
+                    <hr>
+                    <div class="flex justify-between text-base font-bold text-gray-800 pt-1">
+                        <span>Total</span>
+                        <span id="summary-total" class="text-red-600 text-lg">$0.00</span>
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <div class="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>Free shipping progress</span>
+                        <span id="shipping-percent-label">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="shipping-progress-bar" class="bg-red-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+                <button onclick="proceedToCheckout()" class="w-full bg-red-600 text-white py-3 rounded-xl font-semibold hover:bg-red-700 transition-colors mb-3">
+                    <i class="fas fa-lock text-sm mr-2"></i>Proceed to Checkout
+                </button>
+                <a href="/books" class="w-full border border-gray-300 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-50 transition-colors flex items-center justify-center">
+                    <i class="fas fa-arrow-left mr-2 text-sm"></i>Continue Shopping
+                </a>
+
+                <!-- Secure payment badges -->
+                <div class="flex items-center justify-center space-x-3 mt-6 pt-4 border-t">
+                    <i class="fab fa-cc-visa text-2xl text-gray-400"></i>
+                    <i class="fab fa-cc-mastercard text-2xl text-gray-400"></i>
+                    <i class="fab fa-cc-paypal text-2xl text-gray-400"></i>
+                    <i class="fas fa-lock text-sm text-gray-400"></i>
+                    <span class="text-xs text-gray-400">Secure Checkout</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast hidden">
+    <i class="fas fa-check-circle mr-2"></i>
+    <span id="toast-message"></span>
+</div>
+
+<footer class="bg-gray-900 text-gray-300 py-12 mt-12">
+    <div class="container mx-auto px-4 text-center">
+        <p class="text-gray-500">&copy; 2024 ScholarHaven. All rights reserved.</p>
+    </div>
+</footer>
+
+<script>
+    // Get cart from localStorage
+    function getCart() {
+        try {
+            const cart = localStorage.getItem('cart');
+            return cart ? JSON.parse(cart) : [];
+        } catch (e) {
+            console.error('Error parsing cart:', e);
+            return [];
+        }
+    }
+
+    function saveCart(cart) {
+        localStorage.setItem('cart', JSON.stringify(cart));
+        updateCartCount();
+    }
+
+    function formatPrice(price) {
+        return '$' + parseFloat(price).toFixed(2);
+    }
+
+    function updateCartCount() {
+        const cart = getCart();
+        const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
+        const navCount = document.getElementById('nav-cart-count');
+        if (navCount) navCount.textContent = totalItems;
+    }
+
+    function showToast(message, isError = false) {
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toast-message');
+        toastMessage.textContent = message;
+        toast.className = 'toast ' + (isError ? 'error' : '');
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 2000);
+    }
+
+    function renderCart() {
+        const cart = getCart();
+        
+        const loadingEl = document.getElementById('loading-state');
+        const emptyEl = document.getElementById('empty-cart');
+        const contentEl = document.getElementById('cart-content');
+        const countEl = document.getElementById('cart-item-count');
+        
+        if (loadingEl) loadingEl.classList.add('hidden');
+        
+        if (!cart || cart.length === 0) {
+            if (emptyEl) emptyEl.classList.remove('hidden');
+            if (contentEl) contentEl.classList.add('hidden');
+            if (countEl) countEl.textContent = '(0 items)';
+            updateCartCount();
+            return;
+        }
+        
+        if (emptyEl) emptyEl.classList.add('hidden');
+        if (contentEl) contentEl.classList.remove('hidden');
+        if (countEl) countEl.textContent = `(${cart.reduce((s,i) => s + i.quantity, 0)} items)`;
+        
+        // Render cart items with gray placeholder (matching checkout style)
+        const container = document.getElementById('cart-items-container');
+        if (!container) return;
+        
+        container.innerHTML = cart.map((item, idx) => {
+            const subtotal = (item.price * item.quantity);
+            const hasCover = item.coverImage && item.coverImage !== '' && item.coverImage !== 'null' && item.coverImage !== 'undefined';
+            
+            // Gray placeholder matching checkout style
+            let coverHtml = '';
+            if (hasCover) {
+                coverHtml = `<img src="${item.coverImage}" 
+                             alt="${escapeHtml(item.title)}"
+                             class="w-full h-full object-cover"
+                             onerror="this.onerror=null; this.style.display='none'; this.parentElement.innerHTML='<div class=\'w-full h-full bg-gray-100 flex items-center justify-center\'><i class=\'fas fa-book text-2xl text-gray-400\'></i></div>'">`;
+            } else {
+                coverHtml = `<div class="w-full h-full bg-gray-100 flex items-center justify-center">
+                                <i class="fas fa-book text-2xl text-gray-400"></i>
+                            </div>`;
+            }
+            
+            return `
+                <div class="bg-white rounded-2xl shadow-sm p-5 flex items-start gap-5 cart-item-enter" data-index="${idx}">
+                    <div class="w-20 h-28 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
+                        ${coverHtml}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="font-semibold text-gray-800 text-base">${escapeHtml(item.title)}</h3>
+                        <p class="text-sm text-gray-500 mb-1">by ${escapeHtml(item.author || 'Unknown')}</p>
+                        <p class="text-red-600 font-semibold">${formatPrice(item.price)} each</p>
+                        <div class="flex items-center gap-3 mt-3">
+                            <div class="flex items-center border border-gray-200 rounded-lg">
+                                <button onclick="changeQty(${idx}, -1)" class="w-8 h-8 flex items-center justify-center hover:bg-gray-100">
+                                    <i class="fas fa-minus text-xs"></i>
+                                </button>
+                                <span class="w-10 text-center text-sm font-semibold">${item.quantity}</span>
+                                <button onclick="changeQty(${idx}, 1)" class="w-8 h-8 flex items-center justify-center hover:bg-gray-100">
+                                    <i class="fas fa-plus text-xs"></i>
+                                </button>
+                            </div>
+                            <button onclick="removeItem(${idx})" class="text-red-500 hover:text-red-700 text-sm">
+                                <i class="fas fa-trash-alt mr-1"></i> Remove
+                            </button>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-gray-800 text-lg">${formatPrice(subtotal)}</p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        updateSummary(cart);
+        updateCartCount();
+    }
+    
+    function updateSummary(cart) {
+        const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const freeThreshold = 50;
+        const shippingFree = subtotal >= freeThreshold;
+        const shipping = shippingFree ? 0 : 4.99;
+        const total = subtotal + shipping;
+        const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+        
+        const summaryCount = document.getElementById('summary-count');
+        const summarySubtotal = document.getElementById('summary-subtotal');
+        const summaryTotal = document.getElementById('summary-total');
+        const summaryShipping = document.getElementById('summary-shipping');
+        
+        if (summaryCount) summaryCount.textContent = totalItems;
+        if (summarySubtotal) summarySubtotal.textContent = formatPrice(subtotal);
+        if (summaryTotal) summaryTotal.textContent = formatPrice(total);
+        if (summaryShipping) summaryShipping.textContent = shippingFree ? 'Free' : formatPrice(shipping);
+        
+        const percent = Math.min(100, Math.round((subtotal / freeThreshold) * 100));
+        const progressBar = document.getElementById('shipping-progress-bar');
+        const percentLabel = document.getElementById('shipping-percent-label');
+        if (progressBar) progressBar.style.width = percent + '%';
+        if (percentLabel) percentLabel.textContent = percent + '%';
+        
+        const noticeEl = document.getElementById('shipping-notice');
+        const remainingEl = document.getElementById('shipping-remaining');
+        if (!shippingFree && remainingEl) {
+            remainingEl.textContent = formatPrice(freeThreshold - subtotal);
+            if (noticeEl) noticeEl.classList.remove('hidden');
+        } else if (noticeEl) {
+            noticeEl.classList.add('hidden');
+        }
+    }
+    
+    function changeQty(index, delta) {
+        const cart = getCart();
+        if (!cart[index]) return;
+        cart[index].quantity = Math.max(1, cart[index].quantity + delta);
+        saveCart(cart);
+        renderCart();
+    }
+    
+    function removeItem(index) {
+        const cart = getCart();
+        cart.splice(index, 1);
+        saveCart(cart);
+        renderCart();
+    }
+    
+    function proceedToCheckout() {
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            window.location.href = '/login?redirect=/cart';
+            return;
+        }
+        window.location.href = '/checkout';
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/"/g, '&quot;');
+    }
+    
+    // Initialize
+    renderCart();
+    
+    // Nav user menu
+    (function() {
+        const token = localStorage.getItem('jwt');
+        const username = localStorage.getItem('username') || 'User';
+        const container = document.getElementById('user-menu-container');
+        const sellBooksLink = document.getElementById('sellBooksLink');
+        if (!container) return;
+        
+        if (token) {
+            fetch('/api/user/roles', { headers: { 'Authorization': 'Bearer ' + token } })
+                .then(r => r.json())
+                .then(data => {
+                    const isSeller = data.roles && data.roles.includes('SELLER');
+                    container.innerHTML = `
+                        <div class="relative group">
+                            <button class="flex items-center space-x-1 text-gray-700 hover:text-red-600">
+                                <i class="fas fa-user-circle text-2xl"></i>
+                                <span class="font-medium">${escapeHtml(username)}</span>
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </button>
+                            <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl hidden group-hover:block z-50">
+                                <div class="px-4 py-2 border-b"><p class="font-semibold">${escapeHtml(username)}</p></div>
+                                <a href="/profile" class="block px-4 py-2 hover:bg-gray-100">Profile</a>
+                                <a href="/orders" class="block px-4 py-2 hover:bg-gray-100">My Orders</a>
+                                ${isSeller ? '<a href="/my-books-dashboard" class="block px-4 py-2 hover:bg-gray-100">Sell Books</a>' : '<a href="/seller/become-seller" class="block px-4 py-2 bg-yellow-50 text-yellow-700 hover:bg-yellow-100">Become a Seller</a>'}
+                                <hr><a href="#" onclick="logout()" class="block px-4 py-2 text-red-600 hover:bg-gray-100">Logout</a>
+                            </div>
+                        </div>
+                    `;
+                    if (sellBooksLink && isSeller) sellBooksLink.style.display = 'inline-block';
+                })
+                .catch(err => {
+                    console.error('Error fetching roles:', err);
+                    container.innerHTML = `<a href="/login" class="text-gray-700 hover:text-red-600 px-3 py-2">Login</a><a href="/register" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Register</a>`;
+                });
+        } else {
+            container.innerHTML = `<a href="/login" class="text-gray-700 hover:text-red-600 px-3 py-2">Login</a><a href="/register" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Register</a>`;
+        }
+        updateCartCount();
+    })();
+    
+    function logout() {
+        localStorage.removeItem('jwt');
+        localStorage.removeItem('username');
+        document.cookie = 'jwt=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        window.location.href = '/';
+    }
+</script>
+</body>
+</html>

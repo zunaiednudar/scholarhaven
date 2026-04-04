@@ -1,0 +1,11 @@
+com\example\scholarhaven\service\BookServiceIntegrationTest.class
+com\example\scholarhaven\controller\AdminIntegrationTest.class
+com\example\scholarhaven\repository\BookRepositoryTest.class
+com\example\scholarhaven\controller\AdminControllerUnitTest.class
+com\example\scholarhaven\repository\BookRepositoryIntegrationTest.class
+com\example\scholarhaven\controller\api\AdminApiUnitTest.class
+com\example\scholarhaven\controller\api\BookApiControllerUnitTest.class
+com\example\scholarhaven\controller\api\AdminApiIntegrationTest.class
+com\example\scholarhaven\controller\BookControllerUnitTest.class
+com\example\scholarhaven\ScholarhavenApplicationTests.class
+com\example\scholarhaven\service\BookServiceUnitTest.class

@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Admin Dashboard - ScholarHaven</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
+</head>
+<body class="bg-gray-100 text-gray-900">
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold">Admin Dashboard</h1>
+            <p class="text-sm text-gray-600">Manage users and book listings (approve/reject/delete).</p>
+        </div>
+        <a href="#" onclick="logout()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-800">Logout</a>
+    </div>
+
+    <div class="bg-white rounded-xl shadow p-4 mb-8">
+        <h2 class="text-xl font-semibold mb-3">Users</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead>
+                <tr class="bg-gray-100 text-left">
+                    <th class="px-3 py-2">ID</th>
+                    <th class="px-3 py-2">Username</th>
+                    <th class="px-3 py-2">Email</th>
+                    <th class="px-3 py-2">Enabled</th>
+                    <th class="px-3 py-2">Roles</th>
+                    <th class="px-3 py-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="usersTableBody"></tbody>
+              </table>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow p-4 mb-8">
+        <h2 class="text-xl font-semibold mb-3">Pending Book Approvals</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead>
+                <tr class="bg-gray-100 text-left">
+                    <th class="px-3 py-2">ID</th>
+                    <th class="px-3 py-2">Title</th>
+                    <th class="px-3 py-2">Seller</th>
+                    <th class="px-3 py-2">Price</th>
+                    <th class="px-3 py-2">Status</th>
+                    <th class="px-3 py-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="pendingBooksTableBody"></tbody>
+              </table>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow p-4">
+        <h2 class="text-xl font-semibold mb-3">Pending Order Approvals</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead>
+                <tr class="bg-gray-100 text-left">
+                    <th class="px-3 py-2">Order ID</th>
+                    <th class="px-3 py-2">Buyer</th>
+                    <th class="px-3 py-2">Total</th>
+                    <th class="px-3 py-2">Items</th>
+                    <th class="px-3 py-2">Date</th>
+                    <th class="px-3 py-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="pendingOrdersTableBody"></tbody>
+              </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function getToken() {
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            alert('Please login again');
+            window.location.href = '/login';
+            return null;
+        }
+        return token;
+    }
+
+    async function fetchUsers() {
+        const token = getToken();
+        if (!token) return;
+        
+        try {
+            const resp = await fetch('/api/admin/users', { 
+                method: 'GET',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (resp.status === 403) {
+                alert('You do not have admin privileges');
+                window.location.href = '/';
+                return;
+            }
+            if (!resp.ok) throw new Error('Failed to load users');
+            const users = await resp.json();
+            const body = document.getElementById('usersTableBody');
+            body.innerHTML = '';
+            users.forEach(user => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b';
+                tr.innerHTML = `
+                    <td class="px-3 py-2">${user.id}</td>
+                    <td class="px-3 py-2">${escapeHtml(user.username)}</td>
+                    <td class="px-3 py-2">${escapeHtml(user.email)}</td>
+                    <td class="px-3 py-2">${user.enabled ? 'Yes' : 'No'}</td>
+                    <td class="px-3 py-2">${user.roles.join(', ')}</td>
+                    <td class="px-3 py-2 space-x-1">
+                        <button onclick="enableUser(${user.id})" class="bg-green-500 text-white px-2 py-1 rounded">Enable</button>
+                        <button onclick="disableUser(${user.id})" class="bg-yellow-500 text-white px-2 py-1 rounded">Disable</button>
+                        <button onclick="deleteUser(${user.id})" class="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
+                    </td>
+                `;
+                body.appendChild(tr);
+            });
+        } catch (err) {
+            console.error(err);
+            alert('Error loading users. Check console for details.');
+        }
+    }
+
+    async function fetchPendingBooks() {
+        const token = getToken();
+        if (!token) return;
+        
+        try {
+            const resp = await fetch('/api/books/admin/pending', { 
+                method: 'GET',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (!resp.ok) throw new Error('Failed to load pending books');
+            const books = await resp.json();
+            const body = document.getElementById('pendingBooksTableBody');
+            body.innerHTML = '';
+            books.forEach(book => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b';
+                tr.innerHTML = `
+                    <td class="px-3 py-2">${book.id}</td>
+                    <td class="px-3 py-2">${escapeHtml(book.title)}</td>
+                    <td class="px-3 py-2">${escapeHtml(book.sellerName || 'N/A')}</td>
+                    <td class="px-3 py-2">$${book.originalPrice}</td>
+                    <td class="px-3 py-2">${book.status}</td>
+                    <td class="px-3 py-2 space-x-1">
+                        <button onclick="approveBook(${book.id})" class="bg-green-500 text-white px-2 py-1 rounded">Approve</button>
+                        <button onclick="rejectBook(${book.id})" class="bg-red-500 text-white px-2 py-1 rounded">Reject</button>
+                    </td>
+                `;
+                body.appendChild(tr);
+            });
+        } catch (err) {
+            console.error(err);
+            alert('Error loading pending books. Check console for details.');
+        }
+    }
+
+    async function fetchPendingOrders() {
+        const token = getToken();
+        if (!token) return;
+        
+        try {
+            const resp = await fetch('/api/admin/orders/pending', { 
+                method: 'GET',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (!resp.ok) throw new Error('Failed to load pending orders');
+            const orders = await resp.json();
+            const body = document.getElementById('pendingOrdersTableBody');
+            body.innerHTML = '';
+
+            orders.forEach(order => {
+                const itemCount = order.items ? order.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
+                
+                const statusLabel = order.status === 'PENDING' ? 'Pending Approval' : order.status;
+                const statusClass = order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' : 
+                                   (order.status === 'CONFIRMED' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100');
+                
+                const tr = document.createElement('tr');
+                tr.className = 'border-b hover:bg-gray-50';
+                tr.innerHTML = `
+                    <td class="px-3 py-2 font-mono font-semibold">#${order.id}</td>
+                    <td class="px-3 py-2">
+                        <div class="font-medium">${escapeHtml(order.buyerName || 'N/A')}</div>
+                        <div class="text-xs text-gray-500">@${escapeHtml(order.buyerUsername || 'unknown')}</div>
+                    </td>
+                    <td class="px-3 py-2 font-semibold text-green-600">$${order.totalPrice}</td>
+                    <td class="px-3 py-2">
+                        <span class="bg-gray-100 px-2 py-1 rounded text-xs">${order.items ? order.items.length : 0} types (${itemCount} items)</span>
+                    </td>
+                    <td class="px-3 py-2 text-gray-500 text-xs">
+                        ${new Date(order.createdAt).toLocaleDateString()}<br>
+                        ${new Date(order.createdAt).toLocaleTimeString()}
+                    </td>
+                    <td class="px-3 py-2">
+                        <span class="${statusClass} px-2 py-1 rounded-full text-xs font-semibold">${statusLabel}</span>
+                    </td>
+                    <td class="px-3 py-2 space-x-1">
+                        ${order.status === 'PENDING' ? `
+                            <button onclick="approveOrder(${order.id})" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs transition">
+                                <i class="fas fa-check mr-1"></i>Approve
+                            </button>
+                            <button onclick="rejectOrder(${order.id})" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs transition">
+                                <i class="fas fa-times mr-1"></i>Reject
+                            </button>
+                        ` : '<span class="text-gray-400 text-xs">No actions</span>'}
+                    </td>
+                `;
+                body.appendChild(tr);
+            });
+        } catch (err) {
+            console.error(err);
+            alert('Error loading pending orders. Check console for details.');
+        }
+    }
+
+    async function enableUser(id) {
+        const token = getToken();
+        if (!token) return;
+        
+        if (!confirm('Enable this user?')) return;
+        
+        try {
+            const resp = await fetch(`/api/admin/users/${id}/enable`, { 
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (resp.ok) {
+                alert('User enabled successfully');
+                fetchUsers();
+            } else {
+                const error = await resp.json();
+                alert(error.error || 'Failed to enable user');
+            }
+        } catch (err) {
+            alert('Network error');
+        }
+    }
+
+    async function disableUser(id) {
+        const token = getToken();
+        if (!token) return;
+        
+        if (!confirm('Disable this user?')) return;
+        
+        try {
+            const resp = await fetch(`/api/admin/users/${id}/disable`, { 
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (resp.ok) {
+                alert('User disabled successfully');
+                fetchUsers();
+            } else {
+                const error = await resp.json();
+                alert(error.error || 'Failed to disable user');
+            }
+        } catch (err) {
+            alert('Network error');
+        }
+    }
+
+    async function deleteUser(id) {
+        const token = getToken();
+        if (!token) return;
+        
+        if (!confirm('Delete user and all their books? This action cannot be undone.')) return;
+        
+        try {
+            const resp = await fetch(`/api/admin/users/${id}`, { 
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (resp.ok) {
+                alert('User deleted successfully');
+                fetchUsers();
+            } else if (resp.status === 400) {
+                const error = await resp.json();
+                alert(error.error || 'Cannot delete this user');
+            } else {
+                alert('Failed to delete user');
+            }
+        } catch (err) {
+            alert('Network error');
+        }
+    }
+
+    async function approveBook(id) {
+        const token = getToken();
+        if (!token) return;
+        
+        try {
+            console.log('Approving book with ID:', id);
+            const resp = await fetch(`/api/books/admin/${id}/approve`, { 
+                method: 'POST',
+                headers: { 
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (resp.ok) {
+                const data = await resp.json();
+                console.log('Book approved:', data);
+                alert('Book approved successfully');
+                fetchPendingBooks();
+            } else {
+                const errorText = await resp.text();
+                console.error('Error response:', errorText);
+                alert(`Failed to approve book: ${errorText || 'Unknown error'}`);
+            }
+        } catch (err) {
+            console.error('Network error:', err);
+            alert('Network error: ' + err.message);
+        }
+    }
+
+    async function rejectBook(id) {
+        const token = getToken();
+        if (!token) return;
+        
+        if (!confirm('Reject this book?')) return;
+        
+        try {
+            const resp = await fetch(`/api/books/admin/${id}/reject`, { 
+                method: 'POST',
+                headers: { 
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (resp.ok) {
+                alert('Book rejected');
+                fetchPendingBooks();
+            } else {
+                const error = await resp.text();
+                alert('Failed to reject book: ' + error);
+            }
+        } catch (err) {
+            console.error('Network error:', err);
+            alert('Network error');
+        }
+    }
+
+    async function approveOrder(id) {
+        const token = getToken();
+        if (!token) return;
+        
+        if (!confirm('Approve this order?')) return;
+        
+        try {
+            const resp = await fetch(`/api/admin/orders/${id}/approve`, { 
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (resp.ok) {
+                alert('Order approved successfully');
+                fetchPendingOrders();
+            } else {
+                const error = await resp.json();
+                alert(error.error || 'Failed to approve order');
+            }
+        } catch (err) {
+            alert('Network error');
+        }
+    }
+
+    async function rejectOrder(id) {
+        const token = getToken();
+        if (!token) return;
+        
+        if (!confirm('Reject this order? This will cancel the order and restore stock.')) return;
+        
+        try {
+            const resp = await fetch(`/api/admin/orders/${id}/reject`, { 
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (resp.ok) {
+                alert('Order rejected successfully');
+                fetchPendingOrders();
+            } else {
+                const error = await resp.json();
+                alert(error.error || 'Failed to reject order');
+            }
+        } catch (err) {
+            alert('Network error');
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/"/g, '&quot;');
+    }
+
+    function logout() {
+        localStorage.removeItem('jwt');
+        localStorage.removeItem('username');
+        document.cookie = 'jwt=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        window.location.href = '/login';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            window.location.href = '/login';
+            return;
+        }
+        fetchUsers();
+        fetchPendingBooks();
+        fetchPendingOrders();  
+    });
+</script>
+</body>
+</html>
