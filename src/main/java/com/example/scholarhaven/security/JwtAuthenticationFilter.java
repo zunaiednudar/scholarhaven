@@ -30,14 +30,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // Public endpoints - no authentication needed
         return path.startsWith("/public/") ||
                 path.startsWith("/api/auth/") ||
+                path.equals("/") ||
                 path.equals("/login") ||
                 path.equals("/register") ||
                 path.equals("/forgot-password") ||
+                path.equals("/reset-password") ||
                 path.startsWith("/css/") ||
                 path.startsWith("/js/") ||
                 path.startsWith("/images/") ||
                 path.equals("/favicon.ico") ||
-                path.equals("/") ||
                 path.equals("/books") ||
                 path.startsWith("/books/category/") ||
                 path.startsWith("/books/featured") ||
