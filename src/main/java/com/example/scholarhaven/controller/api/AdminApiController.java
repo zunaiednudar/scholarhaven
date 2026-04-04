@@ -52,23 +52,22 @@ public class AdminApiController {
         }
         
         try {
-            // Check if trying to delete self
             User currentUser = userService.findByUsername(userDetails.getUsername());
             if (currentUser.getId().equals(id)) {
                 return ResponseEntity.badRequest().body(Map.of("error", "You cannot delete your own account"));
             }
             
             userService.deleteUserById(id);
-            System.out.println("✅ User deleted successfully: ID " + id);
+            System.out.println("User deleted successfully: ID " + id);
             return ResponseEntity.noContent().build();
             
         } catch (RuntimeException e) {
-            System.out.println("❌ Error: " + e.getMessage());
+            System.out.println("Error: " + e.getMessage());
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("error", e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);
         } catch (Exception e) {
-            System.out.println("❌ Unexpected error: " + e.getMessage());
+            System.out.println("Unexpected error: " + e.getMessage());
             return ResponseEntity.status(500).body(Map.of("error", "Internal server error"));
         }
     }
