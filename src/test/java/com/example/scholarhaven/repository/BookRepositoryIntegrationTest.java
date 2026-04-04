@@ -1,3 +1,4 @@
+```java
 package com.example.scholarhaven.repository;
 
 import com.example.scholarhaven.entity.Book;
@@ -39,21 +40,18 @@ public class BookRepositoryIntegrationTest {
         userRepository.deleteAll();
         categoryRepository.deleteAll();
 
-        // Create test seller - FIX: Add name field
         testSeller = new User();
-        testSeller.setName("Test Seller");  // ← ADD THIS LINE
+        testSeller.setName("Test Seller");
         testSeller.setUsername("seller_" + System.currentTimeMillis());
         testSeller.setEmail("seller_" + System.currentTimeMillis() + "@test.com");
         testSeller.setPassword("password");
         testSeller.setEnabled(true);
         testSeller = userRepository.save(testSeller);
 
-        // Create test category
         testCategory = new Category();
         testCategory.setName("Fiction_" + System.currentTimeMillis());
         testCategory = categoryRepository.save(testCategory);
 
-        // Create test book
         testBook = new Book();
         testBook.setTitle("Integration Test Book");
         testBook.setAuthor("Test Author");
@@ -113,9 +111,8 @@ public class BookRepositoryIntegrationTest {
         boolean exists = bookRepository.existsByIdAndSeller(testBook.getId(), testSeller);
         assertTrue(exists);
 
-        // Create another seller - FIX: Add name field
         User otherSeller = new User();
-        otherSeller.setName("Other Seller");  // ← ADD THIS LINE
+        otherSeller.setName("Other Seller");
         otherSeller.setUsername("other_" + System.currentTimeMillis());
         otherSeller.setEmail("other_" + System.currentTimeMillis() + "@test.com");
         otherSeller.setPassword("password");

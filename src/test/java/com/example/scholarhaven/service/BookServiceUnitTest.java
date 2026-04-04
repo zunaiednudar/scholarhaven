@@ -62,7 +62,6 @@ public class BookServiceUnitTest {
         testBook.setStatus(Book.BookStatus.AVAILABLE);
         testBook.setSeller(testSeller);
         testBook.setCategory(testCategory);
-        // Removed: testBook.setPricingStrategy("STANDARD");
 
         testBookRequest = new BookRequestDTO();
         testBookRequest.setTitle("New Book");
@@ -70,7 +69,6 @@ public class BookServiceUnitTest {
         testBookRequest.setPrice(new BigDecimal("19.99"));
         testBookRequest.setStock(5);
         testBookRequest.setCategoryId(1L);
-        // Removed: testBookRequest.setPricingStrategy("STANDARD");
     }
 
     @Test

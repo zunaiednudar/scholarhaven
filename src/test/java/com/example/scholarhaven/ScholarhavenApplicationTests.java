@@ -8,6 +8,6 @@ public class ScholarhavenApplicationTests {
     @Test
     void simpleTest() {
         assertTrue(true);
-        System.out.println("✅ Test passed");
+        System.out.println("Test passed");
     }
 }
