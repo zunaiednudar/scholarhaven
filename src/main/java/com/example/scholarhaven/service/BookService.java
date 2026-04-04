@@ -13,7 +13,7 @@ public interface BookService {
     BookResponseDTO createBook(BookRequestDTO bookRequest, User seller);
     BookResponseDTO updateBook(Long id, BookRequestDTO bookRequest, User user);
     void deleteBook(Long id, User user);
-    BookResponseDTO markBookAsUnavailable(Long id, User user);  // NEW: Soft delete
+    BookResponseDTO markBookAsUnavailable(Long id, User user);
     List<BookResponseDTO> getBooksBySeller(User seller);
     List<BookResponseDTO> getBooksByCategory(Long categoryId);
     List<BookResponseDTO> searchBooks(String query);

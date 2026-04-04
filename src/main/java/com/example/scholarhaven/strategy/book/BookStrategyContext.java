@@ -19,17 +19,14 @@ public class BookStrategyContext {
             DefaultBookValidationStrategy defaultStrategy,
             SellerBookValidationStrategy sellerStrategy,
             AdminBookValidationStrategy adminStrategy,
-            StandardPricingStrategy standardPricing) {  // Added closing parenthesis
+            StandardPricingStrategy standardPricing) {
         
-        // Initialize validation strategies
         validationStrategies.put("DEFAULT", defaultStrategy);
         validationStrategies.put("SELLER", sellerStrategy);
         validationStrategies.put("ADMIN", adminStrategy);
         
-        // Initialize pricing strategies
         pricingStrategies.put("STANDARD", standardPricing);
         
-        // Set default strategies
         currentValidationStrategy = defaultStrategy;
         currentPricingStrategy = standardPricing;
     }
@@ -38,15 +35,12 @@ public class BookStrategyContext {
         if (user == null || user.getRoles() == null || user.getRoles().isEmpty()) {
             currentValidationStrategy = validationStrategies.get("DEFAULT");
         } else {
-            // Check for ADMIN role first (highest priority)
             if (user.hasRole("ADMIN")) {
                 currentValidationStrategy = validationStrategies.get("ADMIN");
             }
-            // Check for SELLER role
             else if (user.hasRole("SELLER")) {
                 currentValidationStrategy = validationStrategies.get("SELLER");
             }
-            // Default for any other roles (BUYER, etc.)
             else {
                 currentValidationStrategy = validationStrategies.get("DEFAULT");
             }
