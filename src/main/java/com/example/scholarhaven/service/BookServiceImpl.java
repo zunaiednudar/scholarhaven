@@ -52,7 +52,7 @@ public class BookServiceImpl implements BookService {
         System.out.println("========== CREATING BOOK ==========");
         System.out.println("Seller: " + seller.getUsername());
         System.out.println("Title: " + bookRequest.getTitle());
-        
+
         strategyContext.setValidationStrategyForUser(seller);
 
         Book book = mapToEntity(bookRequest);
@@ -71,7 +71,7 @@ public class BookServiceImpl implements BookService {
         }
 
         Book savedBook = bookRepository.save(book);
-        System.out.println("✅ Book created with ID: " + savedBook.getId());
+        System.out.println("Book created with ID: " + savedBook.getId());
         System.out.println("==================================\n");
         return mapToDTO(savedBook);
     }
@@ -82,7 +82,7 @@ public class BookServiceImpl implements BookService {
         System.out.println("========== UPDATING BOOK ==========");
         System.out.println("Book ID: " + id);
         System.out.println("User: " + user.getUsername());
-        
+
         Book book = findBookById(id);
 
         strategyContext.setValidationStrategyForUser(user);
@@ -101,7 +101,7 @@ public class BookServiceImpl implements BookService {
         strategyContext.validateBook(book, user);
 
         Book updatedBook = bookRepository.save(book);
-        System.out.println("✅ Book updated successfully");
+        System.out.println("Book updated successfully");
         System.out.println("==================================\n");
         return mapToDTO(updatedBook);
     }
@@ -113,36 +113,34 @@ public class BookServiceImpl implements BookService {
         System.out.println("Book ID: " + id);
         System.out.println("User: " + user.getUsername() + " (ID: " + user.getId() + ")");
         System.out.println("User roles: " + user.getRoles().stream().map(r -> r.getName()).toList());
-        
+
         Book book = findBookById(id);
         System.out.println("Book found: " + book.getTitle());
         System.out.println("Book seller ID: " + book.getSeller().getId());
         System.out.println("Book seller name: " + book.getSeller().getUsername());
-        
+
         boolean isAdmin = user.hasRole("ADMIN");
         boolean isOwner = book.getSeller().getId().equals(user.getId());
-        
+
         System.out.println("Is Admin: " + isAdmin);
         System.out.println("Is Owner: " + isOwner);
-        
+
         if (!isAdmin && !isOwner) {
             String errorMsg = String.format(
                 "You don't have permission to delete this book. This book belongs to user '%s' (ID: %d). Your user ID is %d.",
                 book.getSeller().getUsername(), book.getSeller().getId(), user.getId()
             );
-            System.out.println("❌ " + errorMsg);
+            System.out.println("Error: " + errorMsg);
             throw new RuntimeException(errorMsg);
         }
-        
-        // Check if book has order references
+
         boolean hasOrders = bookRepository.hasOrderReferences(id);
         if (hasOrders) {
-            System.out.println("⚠️ This book has been ordered by customers. Deleting will also remove associated orders.");
+            System.out.println("This book has been ordered by customers. Deleting will also remove associated orders.");
         }
-        
-        // Delete the book - due to ON DELETE CASCADE, order_items will be automatically removed
+
         bookRepository.delete(book);
-        System.out.println("✅ Book deleted successfully" + (hasOrders ? " (associated orders removed automatically)" : ""));
+        System.out.println("Book deleted successfully" + (hasOrders ? " (associated orders removed automatically)" : ""));
         System.out.println("==========================================\n");
     }
 
@@ -152,21 +150,21 @@ public class BookServiceImpl implements BookService {
         System.out.println("========== MARK BOOK UNAVAILABLE ==========");
         System.out.println("Book ID: " + id);
         System.out.println("User: " + user.getUsername());
-        
+
         Book book = findBookById(id);
-        
+
         boolean isAdmin = user.hasRole("ADMIN");
         boolean isOwner = book.getSeller().getId().equals(user.getId());
-        
+
         if (!isAdmin && !isOwner) {
             throw new RuntimeException("You don't have permission to modify this book");
         }
-        
+
         book.setStatus(Book.BookStatus.SOLD);
         Book savedBook = bookRepository.save(book);
-        System.out.println("✅ Book marked as unavailable (SOLD)");
+        System.out.println("Book marked as unavailable (SOLD)");
         System.out.println("==========================================\n");
-        
+
         return mapToDTO(savedBook);
     }
 
@@ -235,7 +233,7 @@ public class BookServiceImpl implements BookService {
         System.out.println("========== APPROVING BOOK ==========");
         System.out.println("Book ID: " + id);
         System.out.println("Admin: " + admin.getUsername());
-        
+
         Book book = findBookById(id);
 
         if (!admin.hasRole("ADMIN")) {
@@ -244,7 +242,7 @@ public class BookServiceImpl implements BookService {
 
         book.setStatus(Book.BookStatus.AVAILABLE);
         Book approvedBook = bookRepository.save(book);
-        System.out.println("✅ Book approved successfully");
+        System.out.println("Book approved successfully");
         System.out.println("==================================\n");
         return mapToDTO(approvedBook);
     }
@@ -255,7 +253,7 @@ public class BookServiceImpl implements BookService {
         System.out.println("========== REJECTING BOOK ==========");
         System.out.println("Book ID: " + id);
         System.out.println("Admin: " + admin.getUsername());
-        
+
         Book book = findBookById(id);
 
         if (!admin.hasRole("ADMIN")) {
@@ -264,7 +262,7 @@ public class BookServiceImpl implements BookService {
 
         book.setStatus(Book.BookStatus.REJECTED);
         Book rejectedBook = bookRepository.save(book);
-        System.out.println("✅ Book rejected");
+        System.out.println("Book rejected");
         System.out.println("==================================\n");
         return mapToDTO(rejectedBook);
     }

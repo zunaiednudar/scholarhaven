@@ -1,3 +1,4 @@
+
 package com.example.scholarhaven.controller.api;
 
 import com.example.scholarhaven.entity.User;
@@ -131,20 +132,10 @@ public class AdminApiUnitTest {
         verify(userService, times(1)).deleteUserById(userId);
     }
 
-    /**
-     * FIXED: Removed unnecessary stubbing of findByUsername() because the controller's
-     * disableUser() method doesn't call this method. It only checks if userDetails is null
-     * and then directly calls disableUserById(). The when(...).thenReturn(...) for 
-     * findByUsername was being set but never used, causing UnnecessaryStubbing error.
-     * 
-     * Mockito's strict mode detects this and fails the test to ensure clean test code.
-     */
     @Test
     void testDisableUser_Success() {
         Long userId = 2L;
         when(userDetails.getUsername()).thenReturn("admin");
-        // ❌ REMOVED: when(userService.findByUsername("admin")).thenReturn(adminUser);
-        // The controller doesn't use findByUsername in the disable path
 
         ResponseEntity<?> response = adminApiController.disableUser(userId, userDetails);
 
@@ -154,16 +145,10 @@ public class AdminApiUnitTest {
         verify(userService, times(1)).disableUserById(userId);
     }
 
-    /**
-     * FIXED: Removed unnecessary findByUsername() stub.
-     * The disableUserById() exception is what's being tested here, not user validation.
-     */
     @Test
     void testDisableUser_NotFound() {
         Long userId = 999L;
         when(userDetails.getUsername()).thenReturn("admin");
-        // ❌ REMOVED: when(userService.findByUsername("admin")).thenReturn(adminUser);
-        // The controller doesn't use this in the disable path
         doThrow(new RuntimeException("User not found with id: " + userId))
             .when(userService).disableUserById(userId);
 
@@ -175,17 +160,10 @@ public class AdminApiUnitTest {
         verify(userService, times(1)).disableUserById(userId);
     }
 
-    /**
-     * FIXED: Removed unnecessary findByUsername() stub.
-     * The enableUser() controller method doesn't validate the current user,
-     * so this stub was never invoked.
-     */
     @Test
     void testEnableUser_Success() {
         Long userId = 2L;
         when(userDetails.getUsername()).thenReturn("admin");
-        // ❌ REMOVED: when(userService.findByUsername("admin")).thenReturn(adminUser);
-        // Not used in the enable path
 
         ResponseEntity<?> response = adminApiController.enableUser(userId, userDetails);
 
@@ -195,16 +173,10 @@ public class AdminApiUnitTest {
         verify(userService, times(1)).enableUserById(userId);
     }
 
-    /**
-     * FIXED: Removed unnecessary findByUsername() stub.
-     * The test is focused on testing exception handling, not user validation.
-     */
     @Test
     void testEnableUser_NotFound() {
         Long userId = 999L;
         when(userDetails.getUsername()).thenReturn("admin");
-        // ❌ REMOVED: when(userService.findByUsername("admin")).thenReturn(adminUser);
-        // The controller doesn't use this stub in the enable path
         doThrow(new RuntimeException("User not found with id: " + userId))
             .when(userService).enableUserById(userId);
 

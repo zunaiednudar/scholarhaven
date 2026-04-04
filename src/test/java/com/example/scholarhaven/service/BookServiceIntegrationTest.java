@@ -1,3 +1,4 @@
+
 package com.example.scholarhaven.service;
 
 import com.example.scholarhaven.dto.BookRequestDTO;
@@ -55,7 +56,6 @@ public class BookServiceIntegrationTest {
         userRepository.deleteAll();
         categoryRepository.deleteAll();
 
-        // Create or get ADMIN role
         Role adminRole = roleRepository.findByName("ADMIN").orElseGet(() -> {
             Role role = new Role();
             role.setName("ADMIN");
@@ -68,9 +68,8 @@ public class BookServiceIntegrationTest {
             return roleRepository.save(role);
         });
 
-        // Create test seller with SELLER role - FIX: Add name field
         testSeller = new User();
-        testSeller.setName("Test Seller");  // ← ADD THIS LINE
+        testSeller.setName("Test Seller");
         testSeller.setUsername("seller_" + System.currentTimeMillis());
         testSeller.setEmail("seller_" + System.currentTimeMillis() + "@test.com");
         testSeller.setPassword("password");
@@ -80,9 +79,8 @@ public class BookServiceIntegrationTest {
         testSeller.setRoles(sellerRoles);
         testSeller = userRepository.save(testSeller);
 
-        // Create test admin with ADMIN role - FIX: Add name field
         testAdmin = new User();
-        testAdmin.setName("Test Admin");  // ← ADD THIS LINE
+        testAdmin.setName("Test Admin");
         testAdmin.setUsername("admin_" + System.currentTimeMillis());
         testAdmin.setEmail("admin_" + System.currentTimeMillis() + "@test.com");
         testAdmin.setPassword("password");
@@ -92,12 +90,10 @@ public class BookServiceIntegrationTest {
         testAdmin.setRoles(adminRoles);
         testAdmin = userRepository.save(testAdmin);
 
-        // Create test category with unique name
         testCategory = new Category();
         testCategory.setName("Fiction_" + System.currentTimeMillis());
         testCategory = categoryRepository.save(testCategory);
 
-        // Create test book with AVAILABLE status so it can be found in searches
         testBook = new Book();
         testBook.setTitle("Service Integration Test Book");
         testBook.setAuthor("Test Author");
@@ -138,34 +134,28 @@ public class BookServiceIntegrationTest {
 
     @Test
     void testGetBooksByCategory() {
-        // Books in testCategory should exist
         List<BookResponseDTO> booksInTestCategory = bookService.getBooksByCategory(testCategory.getId());
         assertFalse(booksInTestCategory.isEmpty(), "Should find books in the test category");
         assertEquals(1, booksInTestCategory.size(), "Should find exactly 1 book in the test category");
 
-        // Create a different category that won't have books
         Category otherCategory = new Category();
         otherCategory.setName("Other_" + System.currentTimeMillis());
         otherCategory = categoryRepository.save(otherCategory);
 
-        // Books in other category should be empty
         List<BookResponseDTO> booksInOtherCategory = bookService.getBooksByCategory(otherCategory.getId());
         assertTrue(booksInOtherCategory.isEmpty(), "Should find no books in the other category");
     }
 
     @Test
     void testSearchBooks() {
-        // Search for a term that exists in the title
         List<BookResponseDTO> foundBooks = bookService.searchBooks("Service");
         assertFalse(foundBooks.isEmpty(), "Should find books with 'Service' in title");
         assertEquals(1, foundBooks.size(), "Should find exactly 1 book with 'Service' in title");
 
-        // Search for a term that exists in the author
         List<BookResponseDTO> authorBooks = bookService.searchBooks("Test Author");
         assertFalse(authorBooks.isEmpty(), "Should find books with 'Test Author' as author");
         assertEquals(1, authorBooks.size(), "Should find exactly 1 book by 'Test Author'");
 
-        // Search for a term that doesn't exist
         List<BookResponseDTO> notFoundBooks = bookService.searchBooks("NonExistentTermXYZ");
         assertTrue(notFoundBooks.isEmpty(), "Should find no books with non-existent term");
     }
@@ -212,15 +202,12 @@ public class BookServiceIntegrationTest {
 
     @Test
     void testApproveBook() {
-        // First change status to PENDING_APPROVAL
         testBook.setStatus(Book.BookStatus.PENDING_APPROVAL);
         bookRepository.save(testBook);
 
-        // Admin should be able to approve
         BookResponseDTO approved = bookService.approveBook(testBook.getId(), testAdmin);
         assertEquals("AVAILABLE", approved.getStatus());
 
-        // Seller should NOT be able to approve (this should throw exception)
         assertThrows(RuntimeException.class, () -> 
             bookService.approveBook(testBook.getId(), testSeller)
         );
@@ -228,15 +215,12 @@ public class BookServiceIntegrationTest {
 
     @Test
     void testRejectBook() {
-        // First change status to PENDING_APPROVAL
         testBook.setStatus(Book.BookStatus.PENDING_APPROVAL);
         bookRepository.save(testBook);
 
-        // Admin should be able to reject
         BookResponseDTO rejected = bookService.rejectBook(testBook.getId(), testAdmin);
         assertEquals("REJECTED", rejected.getStatus());
 
-        // Seller should NOT be able to reject (this should throw exception)
         assertThrows(RuntimeException.class, () -> 
             bookService.rejectBook(testBook.getId(), testSeller)
         );
@@ -254,7 +238,6 @@ public class BookServiceIntegrationTest {
 
     @Test
     void testGetPendingApprovalBooks() {
-        // Set book to PENDING_APPROVAL
         testBook.setStatus(Book.BookStatus.PENDING_APPROVAL);
         bookRepository.save(testBook);
 
@@ -262,7 +245,6 @@ public class BookServiceIntegrationTest {
         assertFalse(pending.isEmpty());
         assertEquals(1, pending.size());
 
-        // Change to AVAILABLE and verify it's no longer in pending
         testBook.setStatus(Book.BookStatus.AVAILABLE);
         bookRepository.save(testBook);
 

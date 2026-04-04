@@ -31,6 +31,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/books")
 @RequiredArgsConstructor
+    
 public class BookApiController {
 
     private final BookService bookService;
@@ -39,8 +40,6 @@ public class BookApiController {
 
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
-
-    // ========== PUBLIC ENDPOINTS ==========
 
     @GetMapping
     public ResponseEntity<List<BookResponseDTO>> getAllBooks() {
@@ -77,16 +76,12 @@ public class BookApiController {
         return ResponseEntity.ok(bookService.getAvailablePricingStrategies());
     }
 
-    // ========== CATEGORIES ENDPOINT ==========
-
     @GetMapping("/categories")
     public ResponseEntity<List<Category>> getAllCategories() {
         List<Category> categories = categoryService.getAllCategories();
-        System.out.println("📚 API /api/books/categories called - returning " + categories.size() + " categories");
+        System.out.println(" API /api/books/categories called - returning " + categories.size() + " categories");
         return ResponseEntity.ok(categories);
     }
-
-    // ========== SELLER ENDPOINTS ==========
 
     @PostMapping
     @PreAuthorize("hasAnyRole('SELLER','ADMIN')")
@@ -124,13 +119,11 @@ public class BookApiController {
         bookRequest.setFeatured(featured);
         bookRequest.setPricingStrategy(pricingStrategy);
 
-        // Handle image upload
         if (coverImage != null && !coverImage.isEmpty()) {
             String fileName = saveFile(coverImage, "books");
             bookRequest.setCoverImage("/uploads/books/" + fileName);
         }
 
-        // Handle preview PDF upload
         if (previewPdf != null && !previewPdf.isEmpty()) {
             String pdfName = saveFile(previewPdf, "previews");
             bookRequest.setPreviewPdf("/uploads/previews/" + pdfName);
@@ -180,13 +173,11 @@ public class BookApiController {
         bookRequest.setFeatured(featured);
         bookRequest.setPricingStrategy(pricingStrategy);
 
-        // Handle image upload
         if (coverImage != null && !coverImage.isEmpty()) {
             String fileName = saveFile(coverImage, "books");
             bookRequest.setCoverImage("/uploads/books/" + fileName);
         }
 
-        // Handle preview PDF upload
         if (previewPdf != null && !previewPdf.isEmpty()) {
             String pdfName = saveFile(previewPdf, "previews");
             bookRequest.setPreviewPdf("/uploads/previews/" + pdfName);
@@ -204,29 +195,29 @@ public class BookApiController {
                                         @AuthenticationPrincipal UserDetails userDetails) {
         System.out.println("========== DELETE BOOK REQUEST ==========");
         System.out.println("Book ID: " + id);
-        
+
         if (userDetails == null) {
-            System.out.println("❌ User not authenticated");
+            System.out.println("User not authenticated");
             return ResponseEntity.status(401).body(Map.of("error", "Not authenticated"));
         }
-        
+
         try {
             User user = userService.findByUsername(userDetails.getUsername());
             System.out.println("User: " + user.getUsername() + " (ID: " + user.getId() + ")");
             System.out.println("User roles: " + user.getRoles().stream().map(r -> r.getName()).toList());
-            
+
             bookService.deleteBook(id, user);
-            System.out.println("✅ Book deleted successfully");
+            System.out.println("Book deleted successfully");
             System.out.println("==========================================\n");
             return ResponseEntity.ok(Map.of("message", "Book deleted successfully. Any associated orders have been removed."));
-            
+
         } catch (RuntimeException e) {
-            System.out.println("❌ Error: " + e.getMessage());
+            System.out.println("Error: " + e.getMessage());
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
         } catch (Exception e) {
-            System.out.println("❌ Unexpected error: " + e.getMessage());
+            System.out.println("Unexpected error: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Internal server error: " + e.getMessage()));
@@ -247,8 +238,6 @@ public class BookApiController {
         BookResponseDTO book = bookService.applyPricingStrategy(id, strategyName);
         return ResponseEntity.ok(book);
     }
-
-    // ========== ADMIN ENDPOINTS ==========
 
     @GetMapping("/admin/pending")
     @PreAuthorize("hasRole('ADMIN')")
@@ -273,8 +262,6 @@ public class BookApiController {
         BookResponseDTO rejectedBook = bookService.rejectBook(id, admin);
         return ResponseEntity.ok(rejectedBook);
     }
-
-    // ========== HELPER METHODS ==========
 
     private String saveFile(MultipartFile file, String folder) throws IOException {
         Path uploadPath = Paths.get(uploadDir, folder);

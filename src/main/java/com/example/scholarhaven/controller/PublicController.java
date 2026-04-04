@@ -17,7 +17,7 @@ public class PublicController {
 
     @GetMapping("/categories")
     public List<Category> getCategories() {
-        System.out.println("📚 Public categories endpoint called");
+        System.out.println("Public categories endpoint called");
         return categoryService.getAllCategories();
     }
 }

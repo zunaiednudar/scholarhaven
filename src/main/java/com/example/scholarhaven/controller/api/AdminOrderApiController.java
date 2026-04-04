@@ -1,4 +1,3 @@
-// src/main/java/com/example/scholarhaven/controller/api/AdminOrderApiController.java
 package com.example.scholarhaven.controller.api;
 
 import com.example.scholarhaven.dto.OrderResponseDTO;
@@ -50,13 +49,13 @@ public class AdminOrderApiController {
         try {
             User admin = userService.findByUsername(userDetails.getUsername());
             OrderResponseDTO approvedOrder = orderService.approveOrder(id, admin);
-            System.out.println("✅ Order approved successfully: ID " + id);
+            System.out.println("Order approved successfully: ID " + id);
             return ResponseEntity.ok(approvedOrder);
         } catch (RuntimeException e) {
-            System.out.println("❌ Error: " + e.getMessage());
+            System.out.println("Error: " + e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            System.out.println("❌ Unexpected error: " + e.getMessage());
+            System.out.println("Unexpected error: " + e.getMessage());
             return ResponseEntity.status(500).body(Map.of("error", "Internal server error"));
         }
     }
@@ -76,13 +75,13 @@ public class AdminOrderApiController {
         try {
             User admin = userService.findByUsername(userDetails.getUsername());
             OrderResponseDTO rejectedOrder = orderService.rejectOrder(id, admin);
-            System.out.println("✅ Order rejected successfully: ID " + id);
+            System.out.println("Order rejected successfully: ID " + id);
             return ResponseEntity.ok(rejectedOrder);
         } catch (RuntimeException e) {
-            System.out.println("❌ Error: " + e.getMessage());
+            System.out.println("Error: " + e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            System.out.println("❌ Unexpected error: " + e.getMessage());
+            System.out.println("Unexpected error: " + e.getMessage());
             return ResponseEntity.status(500).body(Map.of("error", "Internal server error"));
         }
     }

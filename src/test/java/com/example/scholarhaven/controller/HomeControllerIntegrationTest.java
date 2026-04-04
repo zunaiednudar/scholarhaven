@@ -1,3 +1,4 @@
+
 package com.example.scholarhaven.controller;
 
 import com.example.scholarhaven.entity.Category;
@@ -91,9 +92,6 @@ class HomeControllerIntegrationTest {
                 .andExpect(model().attributeExists("categories"))
                 .andExpect(model().attributeExists("bookCounts"));
     }
-
-
-
 
     @Test
     void testCartPage_Unauthenticated_ShouldReturn403() throws Exception {

@@ -68,34 +68,34 @@ class BookControllerIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        // Clear test data
+       
         bookRepository.deleteAll();
         categoryRepository.deleteAll();
         userRepository.deleteAll();
 
-        // Create roles
+        
         Role buyerRole = createRoleIfNotFound("BUYER");
         Role sellerRole = createRoleIfNotFound("SELLER");
         Role adminRole = createRoleIfNotFound("ADMIN");
 
-        // Create test user (BUYER only)
+        
         testUser = createUser("Test Buyer", "testbuyer", "testbuyer@test.com", "password", Set.of(buyerRole));
         userToken = jwtService.generateToken(new UserPrincipal(testUser));
 
-        // Create seller user
+        
         testSeller = createUser("Test Seller", "testseller", "testseller@test.com", "password", Set.of(buyerRole, sellerRole));
         sellerToken = jwtService.generateToken(new UserPrincipal(testSeller));
 
-        // Create admin user
+        
         testAdmin = createUser("Test Admin", "testadmin", "testadmin@test.com", "password", Set.of(adminRole));
         adminToken = jwtService.generateToken(new UserPrincipal(testAdmin));
 
-        // Create test category
+        
         testCategory = new Category();
         testCategory.setName("Test Category");
         testCategory = categoryRepository.save(testCategory);
 
-        // Create test book
+        
         testBook = createTestBook("Integration Test Book", "Test Author", new BigDecimal("29.99"), 10, 
                                    Book.BookStatus.AVAILABLE, testSeller, testCategory, true);
     }
@@ -133,7 +133,7 @@ class BookControllerIntegrationTest {
         return bookRepository.save(book);
     }
 
-    // ========== PUBLIC PAGE TESTS ==========
+    
 
     @Test
     void testListBooks_AllBooks_ShouldReturnBooksPage() throws Exception {
@@ -175,7 +175,7 @@ class BookControllerIntegrationTest {
                 .andExpect(view().name("my-books-dashboard"));
     }
 
-    // ========== API ENDPOINT TESTS ==========
+    
 
     @Test
     void testApiGetAllBooks_ShouldReturnBooksList() throws Exception {
@@ -282,7 +282,7 @@ class BookControllerIntegrationTest {
 
     @Test
     void testApiDeleteBook_Owner_ShouldDeleteBook() throws Exception {
-        // Create a new book just for deletion test
+    
         Book bookToDelete = createTestBook("Book to Delete", "Delete Author", new BigDecimal("19.99"), 5,
                                            Book.BookStatus.AVAILABLE, testSeller, testCategory, false);
 
@@ -301,7 +301,7 @@ class BookControllerIntegrationTest {
 
     @Test
     void testApiGetPendingApprovalBooks_Admin_ShouldReturnPendingBooks() throws Exception {
-        // Create a pending approval book
+        
         Book pendingBook = createTestBook("Pending Book", "Pending Author", new BigDecimal("15.99"), 2,
                                           Book.BookStatus.PENDING_APPROVAL, testSeller, testCategory, false);
 
@@ -313,7 +313,7 @@ class BookControllerIntegrationTest {
 
     @Test
     void testApiApproveBook_Admin_ShouldApproveBook() throws Exception {
-        // Create a pending approval book
+      
         Book pendingBook = createTestBook("Pending for Approval", "Approve Author", new BigDecimal("25.99"), 10,
                                           Book.BookStatus.PENDING_APPROVAL, testSeller, testCategory, false);
 
@@ -325,7 +325,7 @@ class BookControllerIntegrationTest {
 
     @Test
     void testApiRejectBook_Admin_ShouldRejectBook() throws Exception {
-        // Create a pending approval book
+        
         Book pendingBook = createTestBook("Pending for Rejection", "Reject Author", new BigDecimal("25.99"), 10,
                                           Book.BookStatus.PENDING_APPROVAL, testSeller, testCategory, false);
 

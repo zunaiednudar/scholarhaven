@@ -1,3 +1,4 @@
+
 package com.example.scholarhaven.controller;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -31,13 +32,13 @@ public class AdminIntegrationTest {
     void testServerIsRunning() throws Exception {
         mockMvc.perform(get("/"))
                 .andExpect(status().isOk());
-        System.out.println("✅ Server is running");
+        System.out.println("Server is running");
     }
 
     @Test
     void testPublicEndpointAccessible() throws Exception {
         mockMvc.perform(get("/api/books"))
                 .andExpect(status().isOk());
-        System.out.println("✅ Public endpoint /api/books is accessible");
+        System.out.println("Public endpoint /api/books is accessible");
     }
 }
