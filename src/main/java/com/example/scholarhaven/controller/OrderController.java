@@ -8,53 +8,104 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+
+import java.util.List;
 
 @Controller
-@RequestMapping("/orders")
 @RequiredArgsConstructor
 public class OrderController {
 
     private final OrderService orderService;
     private final UserService userService;
 
-    // My orders page
-    @GetMapping
+    @GetMapping("/orders")
+    @Transactional(readOnly = true)
     public String myOrders(@AuthenticationPrincipal UserDetails userDetails, Model model) {
-        if (userDetails == null) return "redirect:/login";
-
-        User buyer = userService.findByUsername(userDetails.getUsername());
-        model.addAttribute("orders", orderService.getOrdersByBuyer(buyer));
-        return "orders";
-    }
-
-    // Single order detail page
-    @GetMapping("/{id}")
-    public String orderDetail(@PathVariable Long id,
-                              @AuthenticationPrincipal UserDetails userDetails,
-                              Model model) {
-        if (userDetails == null) return "redirect:/login";
-
-        User user = userService.findByUsername(userDetails.getUsername());
-        OrderResponseDTO order = orderService.getOrderById(id);
-
-        // Only buyer or admin can view
-        boolean isOwner = order.getBuyerId().equals(user.getId());
-        boolean isAdmin = user.hasRole("ADMIN");
-
-        if (!isOwner && !isAdmin) {
-            return "redirect:/orders?error=unauthorized";
+        System.out.println("MY ORDERS PAGE ACCESSED");
+        
+        if (userDetails == null) {
+            System.out.println("User not authenticated - redirecting to login");
+            return "redirect:/login";
         }
-
-        model.addAttribute("order", order);
-        return "order-detail";
+        
+        try {
+            User user = userService.findByUsername(userDetails.getUsername());
+            System.out.println("User found: " + user.getUsername() + " (ID: " + user.getId() + ")");
+            
+            List<OrderResponseDTO> orders = orderService.getOrdersByBuyer(user);
+            System.out.println("Found " + orders.size() + " orders for user: " + user.getUsername());
+            
+            // Debug - print each order
+            for (OrderResponseDTO order : orders) {
+                System.out.println("   Order ID: " + order.getId() + 
+                                   ", Status: " + order.getStatus() + 
+                                   ", Total: $" + order.getTotalPrice() +
+                                   ", Items: " + (order.getItems() != null ? order.getItems().size() : 0));
+            }
+            
+            model.addAttribute("orders", orders);
+            
+            System.out.println("Orders page loaded successfully");
+            System.out.println("\n");
+            return "orders";
+            
+        } catch (Exception e) {
+            System.out.println("Error loading orders: " + e.getMessage());
+            e.printStackTrace();
+            model.addAttribute("orders", List.of());
+            model.addAttribute("error", "Could not load orders: " + e.getMessage());
+            return "orders";
+        }
     }
 
-    // Checkout page
-    @GetMapping("/checkout")
-    public String checkout(@AuthenticationPrincipal UserDetails userDetails) {
-        if (userDetails == null) return "redirect:/login";
-        return "checkout";
+    @GetMapping("/orders/{id}")
+    @Transactional(readOnly = true)
+    public String orderDetail(@PathVariable Long id, 
+                              @AuthenticationPrincipal UserDetails userDetails, 
+                              Model model) {
+        System.out.println("ORDER DETAIL PAGE ACCESSED");
+        System.out.println("Order ID requested: " + id);
+        
+        if (userDetails == null) {
+            System.out.println("User not authenticated - redirecting to login");
+            return "redirect:/login";
+        }
+        
+        try {
+            User user = userService.findByUsername(userDetails.getUsername());
+            System.out.println("User found: " + user.getUsername() + " (ID: " + user.getId() + ")");
+            
+            OrderResponseDTO order = orderService.getOrderById(id);
+            System.out.println(" Order found: ID=" + order.getId() +
+                               ", Status=" + order.getStatus() + 
+                               ", Total=$" + order.getTotalPrice() +
+                               ", Items=" + (order.getItems() != null ? order.getItems().size() : 0));
+            
+            // Check if user owns this order or is admin
+            boolean isOwner = order.getBuyerId().equals(user.getId());
+            boolean isAdmin = user.hasRole("ADMIN");
+            
+            System.out.println("Is owner: " + isOwner);
+            System.out.println("Is admin: " + isAdmin);
+            
+            if (!isOwner && !isAdmin) {
+                System.out.println("User not authorized to view order: " + id);
+                return "redirect:/orders?error=unauthorized";
+            }
+            
+            model.addAttribute("order", order);
+            System.out.println("Order detail loaded successfully");
+            System.out.println("\n");
+            return "order-detail";
+            
+        } catch (Exception e) {
+            System.out.println("Error loading order detail: " + e.getMessage());
+            e.printStackTrace();
+            return "redirect:/orders?error=notfound&id=" + id;
+        }
     }
 }

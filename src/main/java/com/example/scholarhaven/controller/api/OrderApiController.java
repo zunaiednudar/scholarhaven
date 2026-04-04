@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -23,20 +24,35 @@ public class OrderApiController {
     private final OrderService orderService;
     private final UserService userService;
 
-    // ========== BUYER ENDPOINTS ==========
+    // BUYER ENDPOINTS
 
-    // Place a new order
     @PostMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<OrderResponseDTO> createOrder(
             @RequestBody OrderRequestDTO request,
             @AuthenticationPrincipal UserDetails userDetails) {
-        User buyer = userService.findByUsername(userDetails.getUsername());
-        OrderResponseDTO order = orderService.createOrder(request, buyer);
-        return new ResponseEntity<>(order, HttpStatus.CREATED);
+        
+        System.out.println("CREATE ORDER");
+        System.out.println("UserDetails: " + (userDetails != null ? userDetails.getUsername() : "null"));
+        
+        if (userDetails == null) {
+            System.out.println("User not authenticated");
+            return ResponseEntity.status(401).build();
+        }
+        
+        try {
+            User buyer = userService.findByUsername(userDetails.getUsername());
+            System.out.println("Buyer: " + buyer.getUsername() + " (ID: " + buyer.getId() + ")");
+            OrderResponseDTO order = orderService.createOrder(request, buyer);
+            System.out.println("Order created: ID=" + order.getId());
+            return new ResponseEntity<>(order, HttpStatus.CREATED);
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
     }
 
-    // Get my orders
     @GetMapping("/my-orders")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<OrderResponseDTO>> getMyOrders(
@@ -45,7 +61,6 @@ public class OrderApiController {
         return ResponseEntity.ok(orderService.getOrdersByBuyer(buyer));
     }
 
-    // Get single order
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<OrderResponseDTO> getOrderById(
@@ -64,7 +79,6 @@ public class OrderApiController {
         return ResponseEntity.ok(order);
     }
 
-    // Cancel order
     @PostMapping("/{id}/cancel")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> cancelOrder(
@@ -75,16 +89,14 @@ public class OrderApiController {
         return ResponseEntity.ok().build();
     }
 
-    // ========== ADMIN ENDPOINTS ==========
+    // ADMIN ENDPOINTS
 
-    // Get all orders
     @GetMapping("/admin/all")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<OrderResponseDTO>> getAllOrders() {
         return ResponseEntity.ok(orderService.getAllOrders());
     }
 
-    // Get orders by status
     @GetMapping("/admin/status/{status}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<OrderResponseDTO>> getOrdersByStatus(
@@ -92,7 +104,6 @@ public class OrderApiController {
         return ResponseEntity.ok(orderService.getOrdersByStatus(status));
     }
 
-    // Update order status
     @PutMapping("/admin/{id}/status")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<OrderResponseDTO> updateOrderStatus(
