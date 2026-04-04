@@ -54,12 +54,10 @@
 </head>
 <body class="bg-gray-50">
 
-<!-- Top Banner -->
 <div class="bg-gradient-to-r from-red-600 to-red-800 text-white text-center py-2 text-sm">
     <i class="fas fa-truck mr-2"></i> Free Shipping on orders over $50
 </div>
 
-<!-- Navigation -->
 <nav class="bg-white shadow-lg sticky top-0 z-50">
     <div class="container mx-auto px-4">
         <div class="flex justify-between items-center h-20">
@@ -114,7 +112,6 @@
     </div>
 </div>
 
-<!-- Add/Edit Book Modal -->
 <div id="bookModal" class="modal">
     <div class="modal-content">
         <span class="close" onclick="closeModal()">&times;</span>
@@ -181,7 +178,6 @@
     </div>
 </div>
 
-<!-- Delete Modal -->
 <div id="deleteModal" class="modal">
     <div class="modal-content max-w-md">
         <span class="close" onclick="closeDeleteModal()">&times;</span>
@@ -528,7 +524,6 @@
         }
     }
 
-    // Navigation menu
     (function() {
         const token = localStorage.getItem('jwt');
         const username = localStorage.getItem('username') || 'User';
