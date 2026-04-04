@@ -51,7 +51,6 @@ public class BookResponseDTO {
         return dto;
     }
 
-    // Getters and Setters
     public Long getId() {
         return id;
     }

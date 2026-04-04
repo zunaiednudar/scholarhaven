@@ -14,7 +14,6 @@ public class BookRequestDTO {
     private Long categoryId;
     private String pricingStrategy;
 
-    // Getters and Setters
     public String getTitle() {
         return title;
     }
