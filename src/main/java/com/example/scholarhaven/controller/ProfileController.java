@@ -37,7 +37,6 @@ public class ProfileController {
 
         userService.deleteUserByUsername(userDetails.getUsername());
 
-        // After deletion, force logout and redirect to homepage or login.
         return "redirect:/login?accountDeleted";
     }
 }
