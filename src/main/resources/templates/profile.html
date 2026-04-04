@@ -45,7 +45,7 @@
 </head>
 <body class="font-sans bg-gray-50">
 
-<!-- Top Banner -->
+
 <div class="bg-gradient-to-r from-red-600 to-red-800 text-white text-center py-2 text-sm">
     <i class="fas fa-truck mr-2"></i> Free Shipping on orders over $50
 </div>
@@ -142,7 +142,7 @@
                 <i class="fas fa-arrow-left mr-2"></i>Back to Home
             </a>
             
-            <!-- Delete Account Button with AJAX -->
+          
             <button id="deleteAccountBtn" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors">
                 <i class="fas fa-trash-alt mr-2"></i>Delete My Account
             </button>
@@ -174,7 +174,7 @@
         } catch (e) {}
     }
 
-    // Delete Account Function
+  
     document.addEventListener('DOMContentLoaded', function() {
         const deleteBtn = document.getElementById('deleteAccountBtn');
         if (deleteBtn) {
@@ -188,22 +188,22 @@
                     return;
                 }
                 
-                // Check if trying to delete admin account
+                
                 if (username === 'admin') {
                     showToast('Admin accounts cannot be deleted', 'error');
                     return;
                 }
                 
-                if (!confirm('⚠️ Are you sure you want to delete your account?\n\nThis action CANNOT be undone!\n\n• All your books will be deleted\n• Your orders will be removed\n• Your profile will be permanently erased\n\nClick OK to confirm deletion.')) {
+                if (!confirm(' Are you sure you want to delete your account?\n\nThis action CANNOT be undone!\n\n• All your books will be deleted\n• Your orders will be removed\n• Your profile will be permanently erased\n\nClick OK to confirm deletion.')) {
                     return;
                 }
                 
-                // Disable button and show loading
+                
                 deleteBtn.disabled = true;
                 deleteBtn.innerHTML = '<span class="loading-spinner"></span>Deleting...';
                 
                 try {
-                    // Try the API endpoint first
+                  
                     const response = await fetch('/api/profile/delete', {
                         method: 'POST',
                         headers: {
@@ -216,11 +216,11 @@
                     
                     if (response.ok && data.success) {
                         showToast('Account deleted successfully!', 'success');
-                        // Clear localStorage
+                     
                         localStorage.removeItem('jwt');
                         localStorage.removeItem('username');
                         document.cookie = 'jwt=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-                        // Redirect to logout after 1.5 seconds
+                        
                         setTimeout(() => {
                             window.location.href = '/logout';
                         }, 1500);
@@ -235,9 +235,9 @@
                     }
                 } catch (error) {
                     console.error('Error:', error);
-                    // Fallback to form submission
+                   
                     showToast('Processing...', 'warning');
-                    // Create a form and submit
+                   
                     const form = document.createElement('form');
                     form.method = 'POST';
                     form.action = '/profile/delete';
@@ -248,7 +248,7 @@
         }
     });
 
-    // Navigation menu
+   
     (function() {
         const token = localStorage.getItem('jwt');
         const username = localStorage.getItem('username') || 'User';
