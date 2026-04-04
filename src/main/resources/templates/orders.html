@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Orders - ScholarHaven</title>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        playfair: ['Playfair Display', 'serif'],
+                        lato: ['Lato', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+</head>
+<body class="font-lato bg-neutral-100 min-h-screen" style="font-family: 'Lato', sans-serif;">
+
+<!-- Navbar -->
+<nav class="bg-neutral-800 text-white px-8 py-4 flex justify-between items-center">
+    <a href="/" class="font-playfair text-xl font-semibold"
+       style="font-family: 'Playfair Display', serif;">ScholarHaven</a>
+    <div class="flex gap-6 text-sm">
+        <a href="/books" class="hover:text-blue-300">Books</a>
+        <a href="/orders" class="text-blue-300">My Orders</a>
+        <a href="/profile" class="hover:text-blue-300">Profile</a>
+    </div>
+</nav>
+
+<div class="max-w-4xl mx-auto px-6 py-10">
+
+    <h1 class="font-playfair text-3xl font-semibold mb-8"
+        style="font-family: 'Playfair Display', serif;">My Orders</h1>
+
+    <!-- Empty state -->
+    <div th:if="${#lists.isEmpty(orders)}"
+         class="bg-white rounded-xl p-12 text-center shadow-sm">
+        <p class="text-gray-500 text-lg mb-4">You haven't placed any orders yet.</p>
+        <a href="/books"
+           class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">
+            Browse Books
+        </a>
+    </div>
+
+    <!-- Orders list -->
+    <div th:if="${!#lists.isEmpty(orders)}" class="space-y-4">
+        <div th:each="order : ${orders}"
+             class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition">
+
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <p class="text-sm text-gray-500">Order #<span th:text="${order.id}"></span></p>
+                    <p class="text-sm text-gray-400"
+                       th:text="${#temporals.format(order.createdAt, 'dd MMM yyyy, HH:mm')}"></p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <!-- Status badge -->
+                    <span th:text="${order.status}"
+                          th:classappend="${order.status == 'PENDING'} ? 'bg-yellow-100 text-yellow-700' :
+                                             (${order.status == 'CONFIRMED'} ? 'bg-blue-100 text-blue-700' :
+                                             (${order.status == 'SHIPPED'} ? 'bg-purple-100 text-purple-700' :
+                                             (${order.status == 'DELIVERED'} ? 'bg-green-100 text-green-700' :
+                                             (${order.status == 'CANCELLED'} ? 'bg-red-100 text-red-700' :
+                                             'bg-gray-100 text-gray-700'))))"
+                          class="text-xs font-semibold px-3 py-1 rounded-full">
+                        </span>
+                    <a th:href="@{/orders/{id}(id=${order.id})}"
+                       class="text-blue-500 text-sm hover:text-blue-600">View Details →</a>
+                </div>
+            </div>
+
+            <!-- Order items preview -->
+            <div class="space-y-2">
+                <div th:each="item : ${order.items}" class="flex items-center gap-3">
+                    <img th:src="${item.bookCoverImage != null ? item.bookCoverImage : '/images/no-cover.png'}"
+                         alt="Book cover"
+                         class="w-10 h-14 object-cover rounded"/>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium" th:text="${item.bookTitle}"></p>
+                        <p class="text-xs text-gray-500"
+                           th:text="'Qty: ' + ${item.quantity} + ' × $' + ${item.priceAtPurchase}"></p>
+                    </div>
+                    <p class="text-sm font-semibold"
+                       th:text="'$' + ${item.subtotal}"></p>
+                </div>
+            </div>
+
+            <div class="border-t mt-4 pt-4 flex justify-between items-center">
+                <p class="text-sm text-gray-500"
+                   th:text="${#lists.size(order.items)} + ' item(s)'"></p>
+                <p class="font-semibold"
+                   th:text="'Total: $' + ${order.totalPrice}"></p>
+            </div>
+
+            <!-- Cancel button — only for PENDING orders -->
+            <div th:if="${order.status == 'PENDING'}" class="mt-3">
+                <button th:data-order-id="${order.id}"
+                        onclick="cancelOrder(this.dataset.orderId)"
+                        class="text-sm text-red-500 hover:text-red-600">
+                    Cancel Order
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function cancelOrder(orderId) {
+        if (!confirm('Are you sure you want to cancel this order?')) return;
+
+        try {
+            const response = await fetch(`/api/orders/${orderId}/cancel`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('Failed to cancel order. Please try again.');
+            }
+        } catch (error) {
+            alert('Something went wrong. Please try again.');
+        }
+    }
+</script>
+</body>
+</html>
