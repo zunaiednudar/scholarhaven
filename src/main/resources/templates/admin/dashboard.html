@@ -17,6 +17,7 @@
         <a href="#" onclick="logout()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-800">Logout</a>
     </div>
 
+    <!-- Users -->
     <div class="bg-white rounded-xl shadow p-4 mb-8">
         <h2 class="text-xl font-semibold mb-3">Users</h2>
         <div class="overflow-x-auto">
@@ -36,6 +37,7 @@
         </div>
     </div>
 
+    <!-- Pending books -->
     <div class="bg-white rounded-xl shadow p-4 mb-8">
         <h2 class="text-xl font-semibold mb-3">Pending Book Approvals</h2>
         <div class="overflow-x-auto">
@@ -55,6 +57,7 @@
         </div>
     </div>
 
+    <!-- Pending Orders -->
     <div class="bg-white rounded-xl shadow p-4">
         <h2 class="text-xl font-semibold mb-3">Pending Order Approvals</h2>
         <div class="overflow-x-auto">
@@ -76,6 +79,7 @@
 </div>
 
 <script>
+    // Get JWT token
     function getToken() {
         const token = localStorage.getItem('jwt');
         if (!token) {
@@ -310,7 +314,7 @@
                 const data = await resp.json();
                 console.log('Book approved:', data);
                 alert('Book approved successfully');
-                fetchPendingBooks();
+                fetchPendingBooks(); // Refresh the list
             } else {
                 const errorText = await resp.text();
                 console.error('Error response:', errorText);
@@ -410,6 +414,7 @@
         window.location.href = '/login';
     }
 
+    // Single DOMContentLoaded event listener
     document.addEventListener('DOMContentLoaded', () => {
         const token = localStorage.getItem('jwt');
         if (!token) {
