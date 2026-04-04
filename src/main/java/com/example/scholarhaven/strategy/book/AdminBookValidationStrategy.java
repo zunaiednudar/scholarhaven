@@ -1,3 +1,4 @@
+```java
 package com.example.scholarhaven.strategy.book;
 
 import com.example.scholarhaven.entity.Book;
@@ -21,7 +22,6 @@ public class AdminBookValidationStrategy implements BookValidationStrategy {
 
     @Override
     public boolean canPerformAction(User user) {
-        // ✅ FIXED: Use hasRole() to check for ADMIN
         return user != null && user.hasRole("ADMIN");
     }
 }
