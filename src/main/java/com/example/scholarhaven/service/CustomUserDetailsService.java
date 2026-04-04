@@ -1,23 +1,25 @@
-package com.example.scholarhaven.security;
+package com.example.scholarhaven.service;
 
+import com.example.scholarhaven.entity.User;
 import com.example.scholarhaven.repository.UserRepository;
+import com.example.scholarhaven.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-@Service // Spring needs it to find this bean (autowire)
-@RequiredArgsConstructor // Needed to inject UserRepository via constructor, mainly for userRepository
-public class UserDetailsServiceImpl implements UserDetailsService {
+@Service
+@RequiredArgsConstructor
+public class CustomUserDetailsService implements UserDetailsService {
+
     private final UserRepository userRepository;
 
     @Override
-    @Transactional(readOnly = true) // Keeps the Hibernate session open so user.getRoles() can be lazily loaded
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return userRepository.findByUsername(username)
-                .map(UserPrincipal::new) // Wraps the User entity in UserPrincipal
+        User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+
+        return new UserPrincipal(user);
     }
 }

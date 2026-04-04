@@ -2,18 +2,19 @@ package com.example.scholarhaven.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.time.LocalDateTime;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Entity
 @Table(name = "users")
-@Getter @Setter
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class User {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -33,6 +34,9 @@ public class User {
     @Column(nullable = false)
     private Boolean enabled = true;
 
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
@@ -44,7 +48,12 @@ public class User {
 
     @OneToMany(mappedBy = "seller", fetch = FetchType.LAZY)
     @Builder.Default
-    private List<Book> books = new java.util.ArrayList<>();
+    private Set<Book> books = new HashSet<>();
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 
     public boolean hasRole(String roleName) {
         return roles.stream().anyMatch(r -> r.getName().equals(roleName));
