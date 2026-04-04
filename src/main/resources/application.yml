@@ -4,13 +4,13 @@ spring:
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:password}
 
-  # Java Persistence API - Works with relational databases using Java objects instead of raw SQL
+
   jpa:
-    # Convert object into SQL
+  
     hibernate:
-      # Update schema if needed when the app starts
+      
       ddl-auto: update
-    # Print all generated SQL queries in the console for debugging
+    
     show-sql: true
     open-in-view: false
 
@@ -26,7 +26,7 @@ spring:
           starttls:
             enable: true
 
-# Replace the contents later
+
 jwt:
   secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
   expiration: 86400000
