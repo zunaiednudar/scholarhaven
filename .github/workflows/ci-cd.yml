@@ -9,25 +9,10 @@ on:
       - main
 
 jobs:
-  # Build & Test
+  # Job 1: Build & Test
   test:
     name: Build & Test
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_DB: ${{ secrets.DB_NAME }}
-          POSTGRES_USER: ${{ secrets.DB_USERNAME }}
-          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - name: Checkout repository
@@ -41,15 +26,9 @@ jobs:
           cache: maven
 
       - name: Run tests
-        env:
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/${{ secrets.DB_NAME }}
-          SPRING_DATASOURCE_USERNAME: ${{ secrets.DB_USERNAME }}
-          SPRING_DATASOURCE_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          JWT_EXPIRATION: ${{ secrets.JWT_EXPIRATION }}
         run: mvn clean verify --no-transfer-progress
 
-  # Deploy to Render (main branch only)
+  # Job 2: Deploy to Render (main branch only)
   deploy:
     name: Deploy to Render
     runs-on: ubuntu-latest
