@@ -1,4 +1,4 @@
-```java
+
 package com.example.scholarhaven.controller;
 
 import com.example.scholarhaven.entity.Category;
