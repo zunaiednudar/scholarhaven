@@ -1,17 +1,35 @@
 version: "3.8"
 
 services:
+  app:
+    build: .
+    container_name: scholarhaven-app
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${DB_NAME:-scholarhaven}
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-password}
+    depends_on:
+      db:
+        condition: service_healthy
+
   db:
     image: 'postgres:16'
     container_name: scholarhaven-db
     environment:
       POSTGRES_DB: ${DB_NAME:-scholarhaven}
-      POSTGRES_USER: ${DB_USERNAME:-zunaied}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-zunaied}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
     ports:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   db_data:
