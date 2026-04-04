@@ -1,994 +1,169 @@
-================================================================================
+## Overview
 
-&#x20;                       \*\*\* AUTHENTICATION FILES \*\*\*
+**ScholarHaven** is a secure, role-based online book marketplace built to demonstrate professional software engineering practices.
 
-================================================================================
+It combines a Spring Boot backend, Thymeleaf server-rendered UI, PostgreSQL relational database, Spring Security (RBAC), Docker containerization, and a CI/CD pipeline using GitHub Actions with deployment on Render.
 
+## Key features
 
+- **Authentication & Authorization**: registration, login/logout, BCrypt password hashing, role-based access control (Admin, Seller, Buyer)
+- **Book management**: sellers can create and manage listings, admins can moderate listings, buyers can browse and view details
+- **Orders**: buyers place orders and view order history, admins can manage order statuses
+- **Password reset**: time-limited, single-use reset tokens stored in a dedicated table
 
+## User roles
 
+| Role | Capabilities |
+| --- | --- |
+| **Admin** | Manage all users, approve/remove book listings, update order statuses |
+| **Seller** | Add, edit, delete own listings, view orders for own books |
+| **Buyer** | Browse listings, manage cart, place orders, view order history |
 
-1\. src\\main\\java\\com\\example\\scholarhaven\\controller\\AuthController.java
+## Tech stack
 
+| Layer | Technology |
+| --- | --- |
+| Language | Java 17 |
+| Backend | Spring Boot 3.x |
+| Security | Spring Security, BCrypt |
+| Frontend | Thymeleaf |
+| Database | PostgreSQL, JPA/Hibernate |
+| Testing | JUnit 5, Mockito, SpringBootTest, MockMvc |
+| Containerization | Docker, Docker Compose |
+| CI/CD | GitHub Actions |
+| Deployment | Render |
 
+## Architecture
 
-2\. src\\main\\java\\com\\example\\scholarhaven\\controller\\PasswordResetController.java
+> 📌 Architecture diagram coming soon — `docs/architecture.png` will be added shortly.
 
+## CI/CD flow
 
+```
+Push to main
+    │
+    ▼
+┌─────────────────────────────────────────┐
+│  CI — Build & Test                      │
+│  1. Checkout repository                 │
+│  2. Set up JDK 17                       │
+│  3. Provision PostgreSQL service        │
+│  4. Run: mvn clean verify               │
+│  ✘ Pipeline fails if any test fails    │
+└─────────────────────────────────────────┘
+    │  (main branch only)
+    ▼
+┌─────────────────────────────────────────┐
+│  CD — Deploy to Render                  │
+│  5. Trigger Render deployment via API   │
+│  6. Application goes live ✅            │
+└─────────────────────────────────────────┘
+```
 
-3\. src\\main\\java\\com\\example\\scholarhaven\\dto\\AuthResponse.java
+## Database design
 
+### Entity relationship overview
 
+Core entities include: `User`, `Role`, `Book`, `Order`, `OrderItem`, `PasswordResetToken`, `Category`.
 
-4\. src\\main\\java\\com\\example\\scholarhaven\\dto\\LoginRequest.java
+### ER diagram
 
+![ER Diagram](docs/er-diagram.png)
 
+[Download ER Diagram PDF](docs/er-diagram.pdf)
 
-5\. src\\main\\java\\com\\example\\scholarhaven\\dto\\PasswordResetRequest.java
+### Password reset token table (design note)
 
+The `password_reset_tokens` table is intentionally separate from `users` to keep the user record clean and persist reset data only when needed.
 
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | Primary key | Auto-generated identifier |
+| `token` | `VARCHAR` (UUID) | Unique cryptographically random reset token |
+| `user_id` | FK → `users.id` | User who initiated the reset |
+| `expiry_date` | `TIMESTAMP` | Token expiration time (for example, 24 hours) |
 
-6\. src\\main\\java\\com\\example\\scholarhaven\\dto\\RegisterRequest.java
+## REST API
 
+Base paths below match the project's API grouping.
 
+### Auth — `/api/auth`
 
-7\. src\\main\\java\\com\\example\\scholarhaven\\dto\\ResetPasswordRequest.java
+| Method | Endpoint | Description | Access |
+| --- | --- | --- | --- |
+| `POST` | `/register` | Register a new user account | Public |
+| `POST` | `/login` | Authenticate and receive session/token | Public |
+| `POST` | `/forgot-password` | Request a password reset token | Public |
+| `POST` | `/reset-password` | Submit a new password with a reset token | Public |
 
+### Books — `/api/books`
 
+| Method | Endpoint | Description | Access |
+| --- | --- | --- | --- |
+| `GET` | `/` | List all available book listings | Public |
+| `GET` | `/{id}` | Get a single book by ID | Public |
+| `POST` | `/` | Create a new listing | Seller |
+| `PUT` | `/{id}` | Update a listing | Seller (owner) or Admin |
+| `DELETE` | `/{id}` | Remove a listing | Seller (owner) or Admin |
 
-8\. src\\main\\java\\com\\example\\scholarhaven\\entity\\PasswordResetToken.java
+### Orders — `/api/orders`
 
+| Method | Endpoint | Description | Access |
+| --- | --- | --- | --- |
+| `POST` | `/` | Place a new order | Buyer |
+| `GET` | `/my` | Get the authenticated buyer's orders | Buyer |
+| `GET` | `/{id}` | Get a specific order's details | Buyer or Admin |
+| `PATCH` | `/{id}/status` | Update order status | Admin |
 
+## Testing
 
-9\. src\\main\\java\\com\\example\\scholarhaven\\entity\\Role.java
+- **Unit tests** (service layer): JUnit 5 and Mockito
+- **Integration tests** (controller layer): `@SpringBootTest` and `MockMvc`
 
+Minimum targets in the spec: **15 unit tests** and **3 integration tests**.
 
+## Run locally
 
-10\. src\\main\\java\\com\\example\\scholarhaven\\entity\\User.java
+### Option A: Docker Compose (recommended)
 
+```bash
+docker compose up --build
+```
 
+This builds the app image and starts both the application and PostgreSQL.
 
-11\. src\\main\\java\\com\\example\\scholarhaven\\repository\\PasswordResetTokenRepository.java
+### Environment variables
 
+Use environment variables for database configuration and any deployment secrets. Do not hardcode credentials.
 
+## CI/CD
 
-12\. src\\main\\java\\com\\example\\scholarhaven\\repository\\RoleRepository.java
+The repository uses GitHub Actions to:
 
+- Build the project
+- Run tests
+- Deploy to Render on `main` branch updates
 
+### Required GitHub Secrets
 
-13\. src\\main\\java\\com\\example\\scholarhaven\\repository\\UserRepository.java
+| Secret Key | Description |
+| --- | --- |
+| `DB_USERNAME` | PostgreSQL database username |
+| `DB_PASSWORD` | PostgreSQL database password |
+| `DB_NAME` | PostgreSQL database name |
+| `RENDER_API_KEY` | Render deployment API key |
 
+## Git workflow
 
+Recommended branch strategy:
 
-14\. src\\main\\java\\com\\example\\scholarhaven\\security\\UserPrincipal.java
+- `main`: protected, production-ready, deploys to Render
+- `develop`: integration branch
+- `feature/*`: feature work
 
+Branch protection rules should block direct pushes to `main` and require at least one PR approval, with CI checks passing before merge.
 
+## Links
 
-15\. src\\main\\java\\com\\example\\scholarhaven\\service\\AuthService.java
-
-
-
-16\. src\\main\\java\\com\\example\\scholarhaven\\service\\CustomUserDetailsService.java
-
-
-
-17\. src\\main\\java\\com\\example\\scholarhaven\\service\\PasswordResetService.java
-
-
-
-18\. src\\main\\java\\com\\example\\scholarhaven\\service\\UserService.java
-
-
-
-19\. src\\main\\resources\\static
-
-
-
-20\. src\\main\\resources\\templates\\forgot-password.html
-
-
-
-21\. src\\main\\resources\\templates\\login.html
-
-22\. src\\main\\resources\\templates\\register.html
-
-
-
-23\. src\\main\\resources\\templates\\reset-password.html
-
-
-
-
-
-================================================================================
-
-&#x20;                   \*\*\* TEST FILES FOR AUTHENTICATION \*\*\*
-
-================================================================================
-
-
-
-
-
-1. src\\test\\java\\com\\example\\scholarhaven\\config\\TestConfig.java
-
-
-
-2\. src\\test\\java\\com\\example\\scholarhaven\\controller\\AuthControllerIntegrationTest.java
-
-
-
-3\. src\\test\\java\\com\\example\\scholarhaven\\dto\\AuthResponseUnitTest.java
-
-
-
-4\. src\\test\\java\\com\\example\\scholarhaven\\dto\\LoginRequestDTOUnitTest.java
-
-
-
-5\. src\\test\\java\\com\\example\\scholarhaven\\dto\\PasswordResetRequestUnitTest.java
-
-
-
-6\. src\\test\\java\\com\\example\\scholarhaven\\dto\\RegisterRequestDTOUnitTest.java
-
-
-
-7\. src\\test\\java\\com\\example\\scholarhaven\\dto\\ResetPasswordRequestUnitTest.java
-
-
-
-8\. src\\test\\java\\com\\example\\scholarhaven\\security\\UserPrincipalUnitTest.java
-
-
-
-9\. src\\test\\java\\com\\example\\scholarhaven\\service\\UserServiceUnitTest.java
-
-
-
-
-
-================================================================================
-
-&#x20;                       \*\*\* BOOK-MANAGEMENT FILES \*\*\*
-
-================================================================================
-
-
-
-
-
-
-
-1. src\\main\\java\\com\\example\\scholarhaven\\config\\WebConfig.java
-
-2\. src\\main\\java\\com\\example\\scholarhaven\\controller\\api\\BookApiController.java
-
-3\. src\\main\\java\\com\\example\\scholarhaven\\controller\\BookController.java
-
-4\. src\\main\\java\\com\\example\\scholarhaven\\controller\\SellerController.java
-
-5\. src\\main\\java\\com\\example\\scholarhaven\\controller\\PublicController.java
-
-
-
-6\. src\\main\\java\\com\\example\\scholarhaven\\dto\\BookRequestDTO.java
-
-
-
-7\. src\\main\\java\\com\\example\\scholarhaven\\dto\\BookResponseDTO.java
-
-
-
-8\. src\\main\\java\\com\\example\\scholarhaven\\entity\\Book.java
-
-
-
-9\. src\\main\\java\\com\\example\\scholarhaven\\entity\\Category.java
-
-
-
-10\. src\\main\\java\\com\\example\\scholarhaven\\repository\\BookRepository.java
-
-
-
-11\. src\\main\\java\\com\\example\\scholarhaven\\repository\\CategoryRepository.java
-
-
-
-12\. src\\main\\java\\com\\example\\scholarhaven\\service\\BookService.java
-
-
-
-13\. src\\main\\java\\com\\example\\scholarhaven\\service\\BookServiceImpl.java
-
-
-
-14\. src\\main\\java\\com\\example\\scholarhaven\\service\\CategoryService.java
-
-
-
-15\. src\\main\\java\\com\\example\\scholarhaven\\strategy\\book\\BookPricingStrategy.java
-
-
-
-16\. src\\main\\java\\com\\example\\scholarhaven\\strategy\\book\\BookValidationStrategy.java
-
-
-
-17\. src\\main\\java\\com\\example\\scholarhaven\\strategy\\book\\DefaultBookValidationStrategy.java
-
-
-
-18\. src\\main\\java\\com\\example\\scholarhaven\\strategy\\book\\SellerBookValidationStrategy.java
-
-
-
-19\. src\\main\\java\\com\\example\\scholarhaven\\strategy\\book\\StandardPricingStrategy.java
-
-
-
-20\. src\\main\\resources\\templates\\become-seller.html
-
-
-
-21\. src\\main\\resources\\templates\\book-detail.html
-
-
-
-22\. src\\main\\resources\\templates\\books.html
-
-
-
-23\. src\\main\\resources\\templates\\my-books-dashboard.html
-
-
-
-24\. src\\main\\java\\com\\example\\scholarhaven\\strategy\\book\\BookStrategyContext.java
-
-
-
-================================================================================
-
-&#x20;                   \*\*\* TEST FILES FOR BOOK-MANAGEMENT \*\*\*
-
-================================================================================
-
-
-
-
-
-1. src\\test\\java\\com\\example\\scholarhaven\\controller\\api\\BookApiControllerUnitTest.java
-
-
-
-2\. src\\test\\java\\com\\example\\scholarhaven\\controller\\BookControllerIntegrationTest.java
-
-
-
-3\. src\\test\\java\\com\\example\\scholarhaven\\controller\\BookControllerUnitTest.java
-
-
-
-4\. src\\test\\java\\com\\example\\scholarhaven\\controller\\SellerControllerIntegrationTest.java
-
-
-
-5\. src\\test\\java\\com\\example\\scholarhaven\\dto\\BookRequestDTOUnitTest.java
-
-
-
-6\. src\\test\\java\\com\\example\\scholarhaven\\dto\\BookResponseDTOUnitTest.java
-
-
-
-7\. src\\test\\java\\com\\example\\scholarhaven\\repository\\BookRepositoryIntegrationTest.java
-
-
-
-8\. src\\test\\java\\com\\example\\scholarhaven\\repository\\BookRepositoryTest.java
-
-
-
-9\. src\\test\\java\\com\\example\\scholarhaven\\service\\BookServiceIntegrationTest.java
-
-
-
-10\. src\\test\\java\\com\\example\\scholarhaven\\service\\BookServiceUnitTest.java
-
-
-
-11\. src\\test\\java\\com\\example\\scholarhaven\\service\\CategoryServiceUnitTest.java
-
-
-
-
-
-================================================================================
-
-&#x20;                       \*\*\* HOMEPAGE + PROFILE FILES \*\*\*
-
-================================================================================
-
-
-
-
-
-1. src\\main\\java\\com\\example\\scholarhaven\\controller\\HomeController.java
-
-
-
-2\. src\\main\\java\\com\\example\\scholarhaven\\controller\\ProfileController.java
-
-
-
-3\. src\\main\\resources\\templates\\index.html
-
-
-
-4\. src\\main\\resources\\templates\\profile.html
-
-
-
-================================================================================
-
-&#x20;                   \*\*\* TEST FOR HOMEPAGE + PROFILE \*\*\*
-
-================================================================================
-
-
-
-
-
-1. src\\test\\java\\com\\example\\scholarhaven\\controller\\HomeControllerIntegrationTest.java
-
-2\. src\\test\\java\\com\\example\\scholarhaven\\controller\\ProfileControllerIntegrationTest.java
-
-
-
-
-
-
-
-================================================================================
-
-&#x20;                       \*\*\* ORDER-MANAGEMENT FILES \*\*\*
-
-================================================================================
-
-
-
-
-
-1. src\\main\\java\\com\\example\\scholarhaven\\controller\\api\\OrderApiController.java
-
-
-
-2\. src\\main\\java\\com\\example\\scholarhaven\\controller\\CheckoutController.java
-
-
-
-3\. src\\main\\java\\com\\example\\scholarhaven\\controller\\OrderController.java
-
-
-
-4\. src\\main\\java\\com\\example\\scholarhaven\\dto\\OrderItemRequestDTO.java
-
-
-
-5\. src\\main\\java\\com\\example\\scholarhaven\\dto\\OrderItemResponseDTO.java
-
-
-
-6\. src\\main\\java\\com\\example\\scholarhaven\\dto\\OrderRequestDTO.java
-
-
-
-7\. src\\main\\java\\com\\example\\scholarhaven\\dto\\OrderResponseDTO.java
-
-
-
-8\. src\\main\\java\\com\\example\\scholarhaven\\entity\\Order.java
-
-
-
-9\. src\\main\\java\\com\\example\\scholarhaven\\entity\\OrderItem.java
-
-
-
-10\. src\\main\\java\\com\\example\\scholarhaven\\repository\\OrderRepository.java
-
-
-
-11\. src\\main\\java\\com\\example\\scholarhaven\\service\\OrderService.java
-
-
-
-12\. src\\main\\java\\com\\example\\scholarhaven\\service\\OrderServiceImpl.java
-
-
-
-13\. src\\main\\resources\\templates\\cart.html
-
-14\. src\\main\\resources\\templates\\checkout.html
-
-
-
-15\. src\\main\\resources\\templates\\order-detail.html
-
-
-
-16\. src\\main\\resources\\templates\\orders.html
-
-
-
-
-
-================================================================================
-
-&#x20;                   \*\*\* TEST FILES FOR ORDER-MANAGEMENT \*\*\*
-
-================================================================================
-
-
-
-
-
-1. src\\test\\java\\com\\example\\scholarhaven\\controller\\CheckoutControllerIntegrationTest.java
-
-
-
-2\. src\\test\\java\\com\\example\\scholarhaven\\controller\\OrderControllerIntegrationTest.java
-
-
-
-3\. src\\test\\java\\com\\example\\scholarhaven\\dto\\OrderItemRequestDTOUnitTest.java
-
-
-
-4\. src\\test\\java\\com\\example\\scholarhaven\\dto\\OrderItemResponseDTOUnitTest.java
-
-
-
-5\. src\\test\\java\\com\\example\\scholarhaven\\dto\\OrderRequestDTOUnitTest.java
-
-
-
-6\. src\\test\\java\\com\\example\\scholarhaven\\dto\\OrderResponseDTOUnitTest.java
-
-
-
-
-
-
-
-================================================================================
-
-&#x20;                       \*\*\* ADMIN PAGE FILES \*\*\*
-
-================================================================================
-
-
-
-
-
-1. src\\main\\java\\com\\example\\scholarhaven\\controller\\api\\AdminApiController.java
-
-
-
-2\. src\\main\\java\\com\\example\\scholarhaven\\controller\\api\\AdminOrderApiController.java
-
-
-
-3\. src\\main\\java\\com\\example\\scholarhaven\\controller\\AdminController.java
-
-
-
-4\. src\\main\\java\\com\\example\\scholarhaven\\strategy\\book\\AdminBookValidationStrategy.java
-
-
-
-5\. src\\main\\resources\\templates\\admin
-
-
-
-
-
-================================================================================
-
-&#x20;                       \*\*\* TEST FILES FOR ADMIN \*\*\*
-
-================================================================================
-
-
-
-
-
-1. src\\test\\java\\com\\example\\scholarhaven\\controller\\api\\AdminApiIntegrationTest.java
-
-
-
-2\. src\\test\\java\\com\\example\\scholarhaven\\controller\\api\\AdminApiUnitTest.java
-
-
-
-3\. src\\test\\java\\com\\example\\scholarhaven\\controller\\AdminControllerUnitTest.java
-
-
-
-4\. src\\test\\java\\com\\example\\scholarhaven\\controller\\AdminIntegrationTest.java
-
-
-
-
-
-================================================================================
-
-&#x20;                       \*\*\* SECURITY FILES \*\*\*
-
-================================================================================
-
-
-
-
-
-1. src\\main\\java\\com\\example\\scholarhaven\\security\\JwtAuthenticationFilter.java
-
-
-
-2\. src\\main\\java\\com\\example\\scholarhaven\\security\\JwtService.java
-
-
-
-3\. src\\main\\java\\com\\example\\scholarhaven\\security\\SecurityConfig.java
-
-
-
-
-
-================================================================================
-
-&#x20;                       \*\*\* CONFIG FILES \*\*\*
-
-================================================================================
-
-
-
-
-
-1. src\\main\\java\\com\\example\\scholarhaven\\config\\DataInitializer.java
-
-
-
-2\. .github\\workflows
-
-
-
-3\. src\\main\\resources\\application-test.properties
-
-
-
-4\. src\\main\\resources\\application.properties
-
-
-
-5\. src\\main\\resources\\application.yml
-
-
-
-6\. .env
-
-
-
-7\. docker-compose.yml
-
-
-
-8\. Dockerfile
-
-9\. pom.xml
-
-10\. mvnw
-
-11\. mvnw.cmd
-
-12\. .gitignore
-
-13\. .gitattributes
-
-
-
-
-
-================================================================================
-
-&#x20;                       \*\*\* MAIN FILES \*\*\*
-
-================================================================================
-
-
-
-
-
-1. src\\main\\java\\com\\example\\scholarhaven\\ScholarhavenApplication.java
-
-
-
-2\. src\\test\\java\\com\\example\\scholarhaven\\ScholarhavenApplicationTests.java
-
-
-
-
-
-================================================================================
-
-&#x20;                       \*\*\* SQL FINAL SCHEMA \*\*\*
-
-================================================================================
-
-
-
-
-
-\-- ============================================
-
-\-- SCHOLARHAVEN COMPLETE DATABASE SETUP
-
-\-- Includes all tables, constraints, indexes, triggers
-
-\-- ============================================
-
-
-
-\-- ============================================
-
-\-- 1. ROLES TABLE
-
-\-- ============================================
-
-CREATE TABLE IF NOT EXISTS roles (
-
-&#x20;   id BIGSERIAL PRIMARY KEY,
-
-&#x20;   name VARCHAR(255) UNIQUE NOT NULL
-
-);
-
-
-
-\-- ============================================
-
-\-- 2. USERS TABLE
-
-\-- ============================================
-
-CREATE TABLE IF NOT EXISTS users (
-
-&#x20;   id BIGSERIAL PRIMARY KEY,
-
-&#x20;   name VARCHAR(255) NOT NULL,
-
-&#x20;   username VARCHAR(255) UNIQUE NOT NULL,
-
-&#x20;   email VARCHAR(255) UNIQUE NOT NULL,
-
-&#x20;   password VARCHAR(255) NOT NULL,
-
-&#x20;   enabled BOOLEAN DEFAULT TRUE,
-
-&#x20;   created\_at TIMESTAMP DEFAULT CURRENT\_TIMESTAMP
-
-);
-
-
-
-\-- ============================================
-
-\-- 3. USER\_ROLES JUNCTION TABLE
-
-\-- ============================================
-
-CREATE TABLE IF NOT EXISTS user\_roles (
-
-&#x20;   user\_id BIGINT NOT NULL,
-
-&#x20;   role\_id BIGINT NOT NULL,
-
-&#x20;   PRIMARY KEY (user\_id, role\_id),
-
-&#x20;   CONSTRAINT fk\_user\_roles\_user FOREIGN KEY (user\_id) 
-
-&#x20;       REFERENCES users(id) ON DELETE CASCADE,
-
-&#x20;   CONSTRAINT fk\_user\_roles\_role FOREIGN KEY (role\_id) 
-
-&#x20;       REFERENCES roles(id) ON DELETE CASCADE
-
-);
-
-
-
-\-- ============================================
-
-\-- 4. CATEGORIES TABLE
-
-\-- ============================================
-
-CREATE TABLE IF NOT EXISTS categories (
-
-&#x20;   id BIGSERIAL PRIMARY KEY,
-
-&#x20;   name VARCHAR(255) UNIQUE NOT NULL,
-
-&#x20;   description TEXT
-
-);
-
-
-
-\-- ============================================
-
-\-- 5. BOOKS TABLE
-
-\-- ============================================
-
-CREATE TABLE IF NOT EXISTS books (
-
-&#x20;   id BIGSERIAL PRIMARY KEY,
-
-&#x20;   title VARCHAR(255) NOT NULL,
-
-&#x20;   author VARCHAR(255) NOT NULL,
-
-&#x20;   description TEXT,
-
-&#x20;   price DECIMAL(10,2) NOT NULL,
-
-&#x20;   stock INTEGER NOT NULL,
-
-&#x20;   status VARCHAR(50) DEFAULT 'AVAILABLE',
-
-&#x20;   cover\_image VARCHAR(255),
-
-&#x20;   preview\_pdf VARCHAR(255),
-
-&#x20;   featured BOOLEAN DEFAULT FALSE,
-
-&#x20;   seller\_id BIGINT NOT NULL,
-
-&#x20;   category\_id BIGINT,
-
-&#x20;   created\_at TIMESTAMP DEFAULT CURRENT\_TIMESTAMP,
-
-&#x20;   updated\_at TIMESTAMP DEFAULT CURRENT\_TIMESTAMP,
-
-&#x20;   CONSTRAINT fk\_books\_seller FOREIGN KEY (seller\_id) 
-
-&#x20;       REFERENCES users(id) ON DELETE CASCADE,
-
-&#x20;   CONSTRAINT fk\_books\_category FOREIGN KEY (category\_id) 
-
-&#x20;       REFERENCES categories(id) ON DELETE SET NULL
-
-);
-
-
-
-\-- ============================================
-
-\-- 6. ORDERS TABLE
-
-\-- ============================================
-
-CREATE TABLE IF NOT EXISTS orders (
-
-&#x20;   id BIGSERIAL PRIMARY KEY,
-
-&#x20;   buyer\_id BIGINT NOT NULL,
-
-&#x20;   total\_price DECIMAL(10,2) NOT NULL DEFAULT 0,
-
-&#x20;   status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
-
-&#x20;   created\_at TIMESTAMP NOT NULL DEFAULT CURRENT\_TIMESTAMP,
-
-&#x20;   CONSTRAINT fk\_orders\_buyer FOREIGN KEY (buyer\_id) 
-
-&#x20;       REFERENCES users(id) ON DELETE CASCADE
-
-);
-
-
-
-\-- ============================================
-
-\-- 7. ORDER\_ITEMS TABLE
-
-\-- ============================================
-
-CREATE TABLE IF NOT EXISTS order\_items (
-
-&#x20;   id BIGSERIAL PRIMARY KEY,
-
-&#x20;   order\_id BIGINT NOT NULL,
-
-&#x20;   book\_id BIGINT NOT NULL,
-
-&#x20;   quantity INT NOT NULL DEFAULT 1,
-
-&#x20;   price\_at\_purchase DECIMAL(10,2) NOT NULL,
-
-&#x20;   CONSTRAINT fk\_order\_items\_order FOREIGN KEY (order\_id) 
-
-&#x20;       REFERENCES orders(id) ON DELETE CASCADE,
-
-&#x20;   CONSTRAINT fk\_order\_items\_book FOREIGN KEY (book\_id) 
-
-&#x20;       REFERENCES books(id) ON DELETE CASCADE
-
-);
-
-
-
-\-- ============================================
-
-\-- 8. PASSWORD\_RESET\_TOKENS TABLE (MISSING IN pg\_dump!)
-
-\-- ============================================
-
-CREATE TABLE IF NOT EXISTS password\_reset\_tokens (
-
-&#x20;   id BIGSERIAL PRIMARY KEY,
-
-&#x20;   token VARCHAR(255) UNIQUE NOT NULL,
-
-&#x20;   user\_id BIGINT NOT NULL,
-
-&#x20;   expires\_at TIMESTAMP NOT NULL,
-
-&#x20;   used BOOLEAN DEFAULT FALSE,
-
-&#x20;   CONSTRAINT fk\_password\_reset\_tokens\_user FOREIGN KEY (user\_id) 
-
-&#x20;       REFERENCES users(id) ON DELETE CASCADE
-
-);
-
-
-
-\-- ============================================
-
-\-- 9. INDEXES FOR PERFORMANCE (MISSING IN pg\_dump!)
-
-\-- ============================================
-
-
-
-\-- Users indexes
-
-CREATE INDEX IF NOT EXISTS idx\_users\_username ON users(username);
-
-CREATE INDEX IF NOT EXISTS idx\_users\_email ON users(email);
-
-CREATE INDEX IF NOT EXISTS idx\_users\_enabled ON users(enabled);
-
-
-
-\-- Books indexes
-
-CREATE INDEX IF NOT EXISTS idx\_books\_seller ON books(seller\_id);
-
-CREATE INDEX IF NOT EXISTS idx\_books\_category ON books(category\_id);
-
-CREATE INDEX IF NOT EXISTS idx\_books\_status ON books(status);
-
-CREATE INDEX IF NOT EXISTS idx\_books\_featured ON books(featured);
-
-CREATE INDEX IF NOT EXISTS idx\_books\_created ON books(created\_at);
-
-
-
-\-- Orders indexes
-
-CREATE INDEX IF NOT EXISTS idx\_orders\_buyer ON orders(buyer\_id);
-
-CREATE INDEX IF NOT EXISTS idx\_orders\_status ON orders(status);
-
-CREATE INDEX IF NOT EXISTS idx\_orders\_created ON orders(created\_at);
-
-
-
-\-- Order items indexes
-
-CREATE INDEX IF NOT EXISTS idx\_order\_items\_order ON order\_items(order\_id);
-
-CREATE INDEX IF NOT EXISTS idx\_order\_items\_book ON order\_items(book\_id);
-
-
-
-\-- Password reset tokens indexes
-
-CREATE INDEX IF NOT EXISTS idx\_password\_reset\_tokens\_token ON password\_reset\_tokens(token);
-
-CREATE INDEX IF NOT EXISTS idx\_password\_reset\_tokens\_user ON password\_reset\_tokens(user\_id);
-
-
-
-\-- ============================================
-
-\-- 10. TRIGGER: DELETE ORPHANED ORDERS (MISSING IN pg\_dump!)
-
-\-- ============================================
-
-
-
-CREATE OR REPLACE FUNCTION delete\_orphaned\_orders()
-
-RETURNS TRIGGER AS $$
-
-BEGIN
-
-&#x20;   IF NOT EXISTS (SELECT 1 FROM order\_items WHERE order\_id = OLD.order\_id) THEN
-
-&#x20;       DELETE FROM orders WHERE id = OLD.order\_id;
-
-&#x20;   END IF;
-
-&#x20;   RETURN OLD;
-
-END;
-
-$$ LANGUAGE plpgsql;
-
-
-
-DROP TRIGGER IF EXISTS delete\_orphaned\_orders\_trigger ON order\_items;
-
-CREATE TRIGGER delete\_orphaned\_orders\_trigger
-
-AFTER DELETE ON order\_items
-
-FOR EACH ROW
-
-EXECUTE FUNCTION delete\_orphaned\_orders();
-
-
-
-\-- ============================================
-
-\-- 11. TRIGGER: UPDATE BOOK UPDATED\_AT TIMESTAMP (MISSING IN pg\_dump!)
-
-\-- ============================================
-
-
-
-CREATE OR REPLACE FUNCTION update\_book\_updated\_at()
-
-RETURNS TRIGGER AS $$
-
-BEGIN
-
-&#x20;   NEW.updated\_at = CURRENT\_TIMESTAMP;
-
-&#x20;   RETURN NEW;
-
-END;
-
-$$ LANGUAGE plpgsql;
-
-
-
-DROP TRIGGER IF EXISTS update\_book\_updated\_at\_trigger ON books;
-
-CREATE TRIGGER update\_book\_updated\_at\_trigger
-
-BEFORE UPDATE ON books
-
-FOR EACH ROW
-
-EXECUTE FUNCTION update\_book\_updated\_at();
-
-
-
-\---
-
+- Repository: [https://github.com/zunaiednudar/scholarhaven](https://github.com/zunaiednudar/scholarhaven)
+- Deployment URL: *(add after deploying on Render)*
