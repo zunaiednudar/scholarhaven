@@ -6,8 +6,8 @@ services:
     container_name: scholarhaven-db
     environment:
       POSTGRES_DB: ${DB_NAME:-scholarhaven}
-      POSTGRES_USER: ${DB_USERNAME:-zunaied}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-zunaied}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
     ports:
       - "5432:5432"
     volumes:
