@@ -1,4 +1,3 @@
-```java
 package com.example.scholarhaven.strategy.book;
 
 import com.example.scholarhaven.entity.Book;
