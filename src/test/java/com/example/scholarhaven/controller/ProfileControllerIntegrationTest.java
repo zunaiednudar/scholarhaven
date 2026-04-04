@@ -1,3 +1,4 @@
+```java
 package com.example.scholarhaven.controller;
 
 import com.example.scholarhaven.entity.Book;
@@ -73,7 +74,6 @@ class ProfileControllerIntegrationTest {
                     return roleRepository.save(role);
                 });
 
-        // Create regular user
         testUser = new User();
         testUser.setName("Regular User");
         testUser.setUsername("regularuser");
@@ -88,7 +88,6 @@ class ProfileControllerIntegrationTest {
         UserPrincipal userPrincipal = new UserPrincipal(testUser);
         userToken = jwtService.generateToken(userPrincipal);
 
-        // Create seller user with books
         testSeller = new User();
         testSeller.setName("Seller User");
         testSeller.setUsername("selleruser");
