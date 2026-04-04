@@ -1,4 +1,4 @@
-```java
+
 package com.example.scholarhaven.controller.api;
 
 import org.junit.jupiter.api.BeforeEach;
