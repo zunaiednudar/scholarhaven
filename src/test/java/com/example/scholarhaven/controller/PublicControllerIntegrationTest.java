@@ -28,10 +28,10 @@ class PublicControllerIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        // Clear all categories first
+        
         categoryRepository.deleteAll();
         
-        // Add test categories with unique names
+        
         Category category1 = new Category();
         category1.setName("Fiction_Test_" + System.currentTimeMillis());
         category1.setDescription("Fictional books");

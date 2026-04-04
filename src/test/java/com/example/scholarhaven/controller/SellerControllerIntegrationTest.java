@@ -67,7 +67,7 @@ class SellerControllerIntegrationTest {
                     return roleRepository.save(role);
                 });
 
-        // Create regular user
+        
         testUser = new User();
         testUser.setName("Regular User");
         testUser.setUsername("regularuser");
@@ -82,7 +82,7 @@ class SellerControllerIntegrationTest {
         UserPrincipal userPrincipal = new UserPrincipal(testUser);
         userToken = jwtService.generateToken(userPrincipal);
 
-        // Create seller user
+       
         testSeller = new User();
         testSeller.setName("Seller User");
         testSeller.setUsername("selleruser");
