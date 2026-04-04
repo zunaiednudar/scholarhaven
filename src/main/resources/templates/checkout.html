@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - ScholarHaven</title>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        playfair: ['Playfair Display', 'serif'],
+                        lato: ['Lato', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+</head>
+<body class="font-lato bg-neutral-100 min-h-screen" style="font-family: 'Lato', sans-serif;">
+
+<!-- Navbar -->
+<nav class="bg-neutral-800 text-white px-8 py-4 flex justify-between items-center">
+    <a href="/" class="font-playfair text-xl font-semibold"
+       style="font-family: 'Playfair Display', serif;">ScholarHaven</a>
+    <div class="flex gap-6 text-sm">
+        <a href="/books" class="hover:text-blue-300">Books</a>
+        <a href="/orders" class="hover:text-blue-300">My Orders</a>
+        <a href="/profile" class="hover:text-blue-300">Profile</a>
+    </div>
+</nav>
+
+<div class="max-w-5xl mx-auto px-6 py-10">
+
+    <h1 class="font-playfair text-3xl font-semibold mb-8"
+        style="font-family: 'Playfair Display', serif;">Checkout</h1>
+
+    <!-- Empty cart state (hidden by default, shown via JS) -->
+    <div id="emptyCart" class="hidden bg-white rounded-xl p-12 text-center shadow-sm">
+        <p class="text-gray-500 text-lg mb-4">Your cart is empty.</p>
+        <a href="/books" class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">
+            Browse Books
+        </a>
+    </div>
+
+    <!-- Checkout layout -->
+    <div id="checkoutLayout" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <!-- Left: Cart items -->
+        <div class="lg:col-span-2 space-y-4">
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <h2 class="font-playfair text-lg font-semibold mb-4"
+                    style="font-family: 'Playfair Display', serif;">Your Items</h2>
+
+                <div id="cartItemsList" class="space-y-4">
+                    <!-- Items injected by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Order summary -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-xl shadow-sm p-6 sticky top-6">
+                <h2 class="font-playfair text-lg font-semibold mb-4"
+                    style="font-family: 'Playfair Display', serif;">Order Summary</h2>
+
+                <div class="space-y-2 text-sm text-gray-600 mb-4">
+                    <div class="flex justify-between">
+                        <span id="itemCountLabel">0 item(s)</span>
+                    </div>
+                    <div id="summaryItemLines" class="space-y-1">
+                        <!-- Summary lines injected by JS -->
+                    </div>
+                </div>
+
+                <div class="border-t pt-4 flex justify-between font-semibold text-base mb-6">
+                    <span>Total</span>
+                    <span id="totalPrice">$0.00</span>
+                </div>
+
+                <button id="placeOrderBtn"
+                        onclick="placeOrder()"
+                        class="w-full bg-blue-500 text-white font-semibold py-3 rounded hover:bg-blue-600 focus:ring-2 focus:ring-blue-400 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    Place Order
+                </button>
+
+                <p id="orderError" class="text-red-500 text-sm mt-3 hidden"></p>
+                <p id="orderSuccess" class="text-green-500 text-sm mt-3 hidden"></p>
+
+                <a href="/books"
+                   class="block text-center text-sm text-blue-500 hover:text-blue-600 mt-4">
+                    ← Continue Shopping
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading state -->
+    <div id="loadingState" class="flex justify-center items-center py-20">
+        <div class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+</div>
+
+<script>
+    // ─── Cart stored in localStorage as: [{ bookId, title, author, coverImage, price, quantity }]
+    const CART_KEY = 'scholarhaven_cart';
+
+    function getCart() {
+        try {
+            return JSON.parse(localStorage.getItem(CART_KEY)) || [];
+        } catch {
+            return [];
+        }
+    }
+
+    function saveCart(cart) {
+        localStorage.setItem(CART_KEY, JSON.stringify(cart));
+    }
+
+    function formatPrice(val) {
+        return '$' + parseFloat(val).toFixed(2);
+    }
+
+    function renderCart() {
+        const cart = getCart();
+        document.getElementById('loadingState').classList.add('hidden');
+
+        if (cart.length === 0) {
+            document.getElementById('emptyCart').classList.remove('hidden');
+            return;
+        }
+
+        document.getElementById('checkoutLayout').classList.remove('hidden');
+
+        // ── Cart items list
+        const listEl = document.getElementById('cartItemsList');
+        listEl.innerHTML = '';
+
+        cart.forEach((item, index) => {
+            const subtotal = (parseFloat(item.price) * item.quantity).toFixed(2);
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-4 pb-4 border-b last:border-0 last:pb-0';
+            div.innerHTML = `
+                <img src="${item.coverImage || '/images/no-cover.png'}"
+                     alt="Book cover"
+                     class="w-14 h-20 object-cover rounded shadow-sm flex-shrink-0"/>
+                <div class="flex-1 min-w-0">
+                    <p class="font-medium text-gray-800 truncate">${escapeHtml(item.title)}</p>
+                    <p class="text-sm text-gray-500">${escapeHtml(item.author)}</p>
+                    <p class="text-sm text-gray-400 mt-1">${formatPrice(item.price)} each</p>
+
+                    <!-- Quantity control -->
+                    <div class="flex items-center gap-2 mt-2">
+                        <button onclick="changeQty(${index}, -1)"
+                                class="w-6 h-6 flex items-center justify-center border rounded text-gray-600 hover:bg-gray-100 text-xs font-bold">−</button>
+                        <span class="text-sm font-medium w-4 text-center">${item.quantity}</span>
+                        <button onclick="changeQty(${index}, 1)"
+                                class="w-6 h-6 flex items-center justify-center border rounded text-gray-600 hover:bg-gray-100 text-xs font-bold">+</button>
+                    </div>
+                </div>
+                <div class="text-right flex-shrink-0">
+                    <p class="font-semibold text-gray-700">${formatPrice(subtotal)}</p>
+                    <button onclick="removeItem(${index})"
+                            class="text-xs text-red-400 hover:text-red-600 mt-1">Remove</button>
+                </div>
+            `;
+            listEl.appendChild(div);
+        });
+
+        // ── Summary
+        let total = 0;
+        const summaryLines = document.getElementById('summaryItemLines');
+        summaryLines.innerHTML = '';
+
+        cart.forEach(item => {
+            const subtotal = parseFloat(item.price) * item.quantity;
+            total += subtotal;
+            const line = document.createElement('div');
+            line.className = 'flex justify-between text-gray-500';
+            line.innerHTML = `<span class="truncate max-w-[160px]">${escapeHtml(item.title)}</span><span>${formatPrice(subtotal)}</span>`;
+            summaryLines.appendChild(line);
+        });
+
+        document.getElementById('itemCountLabel').textContent = cart.length + ' item(s)';
+        document.getElementById('totalPrice').textContent = formatPrice(total);
+    }
+
+    function changeQty(index, delta) {
+        const cart = getCart();
+        cart[index].quantity += delta;
+        if (cart[index].quantity < 1) cart[index].quantity = 1;
+        saveCart(cart);
+        renderCart();
+    }
+
+    function removeItem(index) {
+        const cart = getCart();
+        cart.splice(index, 1);
+        saveCart(cart);
+        renderCart();
+    }
+
+    async function placeOrder() {
+        const cart = getCart();
+        if (cart.length === 0) return;
+
+        const btn = document.getElementById('placeOrderBtn');
+        const errorEl = document.getElementById('orderError');
+        const successEl = document.getElementById('orderSuccess');
+
+        btn.disabled = true;
+        btn.textContent = 'Placing Order...';
+        errorEl.classList.add('hidden');
+        successEl.classList.add('hidden');
+
+        const payload = {
+            items: cart.map(item => ({
+                bookId: item.bookId,
+                quantity: item.quantity
+            }))
+        };
+
+        try {
+            const response = await fetch('/api/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const msg = await response.text();
+                errorEl.textContent = msg || 'Failed to place order. Please try again.';
+                errorEl.classList.remove('hidden');
+                btn.disabled = false;
+                btn.textContent = 'Place Order';
+                return;
+            }
+
+            const order = await response.json();
+
+            // Clear cart on success
+            localStorage.removeItem(CART_KEY);
+
+            successEl.textContent = 'Order placed successfully! Redirecting...';
+            successEl.classList.remove('hidden');
+
+            setTimeout(() => {
+                window.location.href = `/orders/${order.id}`;
+            }, 1500);
+
+        } catch (err) {
+            errorEl.textContent = 'Something went wrong. Please try again.';
+            errorEl.classList.remove('hidden');
+            btn.disabled = false;
+            btn.textContent = 'Place Order';
+        }
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(str || ''));
+        return div.innerHTML;
+    }
+
+    // Init
+    renderCart();
+</script>
+</body>
+</html>

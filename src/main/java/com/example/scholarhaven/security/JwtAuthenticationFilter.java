@@ -13,12 +13,15 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-@Component
+@Component // Required for Spring to find and autowire this
 @RequiredArgsConstructor
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
+// Automatically generates a constructor for the class (Includes all final fields, all fields marked with @NonNull)
+public class JwtAuthenticationFilter extends OncePerRequestFilter { // OncePerRequestFilter -> Filter is executed only once per HTTP request
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
@@ -30,14 +33,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // Public endpoints - no authentication needed
         return path.startsWith("/public/") ||
                 path.startsWith("/api/auth/") ||
-                path.equals("/") ||
+                path.startsWith("/api/books") ||
                 path.equals("/login") ||
                 path.equals("/register") ||
                 path.equals("/forgot-password") ||
                 path.equals("/reset-password") ||
+                path.equals("/about") ||
+                path.equals("/contact") ||
                 path.startsWith("/css/") ||
                 path.startsWith("/js/") ||
                 path.startsWith("/images/") ||
+                path.startsWith("/uploads/") ||
                 path.equals("/favicon.ico") ||
                 path.equals("/books") ||
                 path.startsWith("/books/category/") ||
@@ -74,11 +80,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
-        if (jwt != null) {
-            try {
-                String username = jwtService.extractUsername(jwt);
-                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+        // If no token found in either place, skip
+        if (jwt == null) {
+            filterChain.doFilter(request, response); // Pass this request and response to the next filter / controller (if this is the last filter)
+            return;
+        }
+
+        // Validate and authenticate
+        try {
+            final String username = jwtService.extractUsername(jwt);
+
+            // Only authenticate if not already authenticated
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+                // Spring security object that represents an authenticated user
+                // Constructor parameters -> principal, credentials, authorities
+                if (jwtService.isTokenValid(jwt, userDetails)) {
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
+
+                    // WebAuthenticationDetailsSource().buildDetails(request) -> Creates additional details about the request
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                     if (jwtService.isTokenValid(jwt, userDetails)) {
                         UsernamePasswordAuthenticationToken authToken =
