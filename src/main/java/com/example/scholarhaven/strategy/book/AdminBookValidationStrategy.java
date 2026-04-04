@@ -21,7 +21,6 @@ public class AdminBookValidationStrategy implements BookValidationStrategy {
 
     @Override
     public boolean canPerformAction(User user) {
-        // ✅ FIXED: Use hasRole() to check for ADMIN
         return user != null && user.hasRole("ADMIN");
     }
 }
