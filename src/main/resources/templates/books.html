@@ -40,7 +40,6 @@
                 </form>
             </div>
             <div class="flex items-center space-x-6" id="userMenu">
-                <!-- Cart Icon - hidden by default, shown when logged in -->
                 <a href="/cart" id="cartLink" class="text-gray-700 hover:text-red-600 relative hidden">
                     <i class="fas fa-shopping-cart text-xl"></i>
                     <span id="cart-count" class="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
@@ -51,9 +50,7 @@
         <div class="flex space-x-8 py-3 border-t">
             <a href="/" class="text-gray-700 hover:text-red-600">Home</a>
             <a href="/books" class="text-red-600 font-medium">All Books</a>
-            <!-- My Orders - hidden by default, shown when logged in -->
             <a href="/orders" id="myOrdersLink" class="text-gray-700 hover:text-red-600 hidden">My Orders</a>
-            <!-- Sell Books - hidden by default, shown when logged in as seller -->
             <a href="/my-books-dashboard" id="sellBooksLink" class="text-gray-700 hover:text-red-600 hidden">Sell Books</a>
         </div>
     </div>
@@ -61,7 +58,6 @@
 
 <div class="container mx-auto px-4 py-8">
     <div class="flex flex-col lg:flex-row gap-8">
-        <!-- Category Sidebar -->
         <div class="w-full lg:w-64 flex-shrink-0">
             <div class="bg-white rounded-lg shadow p-4 sticky top-24">
                 <h3 class="font-bold text-lg mb-3">Categories</h3>
@@ -85,13 +81,11 @@
             </div>
         </div>
 
-        <!-- Books Grid -->
         <div class="flex-1">
             <h1 class="text-3xl font-bold mb-6" th:text="${title}">All Books</h1>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 <div th:each="book : ${books}" class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition flex flex-col">
-                    <!-- Cover Image with Gray Placeholder -->
                     <div class="w-full h-48 relative overflow-hidden bg-gray-100">
                         <img th:if="${book.coverImage != null and book.coverImage != ''}" 
                              th:src="${book.coverImage}" 
@@ -160,7 +154,6 @@
         if (token) {
             document.cookie = `jwt=${token}; path=/; max-age=86400; SameSite=Lax`;
             
-            // Show cart link and my orders link for logged in users
             if (cartLink) cartLink.classList.remove('hidden');
             if (myOrdersLink) myOrdersLink.classList.remove('hidden');
 
@@ -214,7 +207,6 @@
                 `;
             });
         } else {
-            // Not logged in - hide cart, my orders, and sell books links
             if (cartLink) cartLink.classList.add('hidden');
             if (myOrdersLink) myOrdersLink.classList.add('hidden');
             if (sellBooksLink) sellBooksLink.classList.add('hidden');
