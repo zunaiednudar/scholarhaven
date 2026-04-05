@@ -5,6 +5,7 @@ import com.example.scholarhaven.entity.User;
 import com.example.scholarhaven.repository.PasswordResetTokenRepository;
 import com.example.scholarhaven.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,9 @@ public class PasswordResetService {
     private final PasswordResetTokenRepository tokenRepository;
     private final JavaMailSender mailSender;
     private final PasswordEncoder passwordEncoder;
+
+    @Value("${app.base-url}")
+    private String baseUrl;
 
     @Transactional
     public void sendResetLink(String email) {
@@ -53,7 +57,7 @@ public class PasswordResetService {
                 "Hello " + user.getName() + ",\n\n" +
                         "You requested a password reset for your ScholarHaven account.\n\n" +
                         "Click the link below to reset your password:\n" +
-                        "http://localhost:8080/reset-password?token=" + token + "\n\n" +
+                        baseUrl + "/reset-password?token=" + token + "\n\n" +
                         "This link expires in 1 hour.\n\n" +
                         "If you did not request this, please ignore this email.\n\n" +
                         "ScholarHaven Team"

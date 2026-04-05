@@ -8,8 +8,11 @@ services:
       - "8080:8080"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${DB_NAME:-scholarhaven}
-      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-postgres}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-password}
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-zunaied}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-zunaied}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
     depends_on:
       db:
         condition: service_healthy
@@ -19,14 +22,14 @@ services:
     container_name: scholarhaven-db
     environment:
       POSTGRES_DB: ${DB_NAME:-scholarhaven}
-      POSTGRES_USER: ${DB_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+      POSTGRES_USER: ${DB_USERNAME:-zunaied}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-zunaied}
     ports:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-zunaied} -d ${DB_NAME:-scholarhaven}"]
       interval: 10s
       timeout: 5s
       retries: 5

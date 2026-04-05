@@ -33,7 +33,7 @@ public class SecurityConfig {
 
                         // Public pages
                         .requestMatchers("/", "/index", "/about", "/contact").permitAll()
-                        .requestMatchers("/login", "/register", "/forgot-password").permitAll()
+                        .requestMatchers("/login", "/register", "/forgot-password", "/reset-password").permitAll()
                             
                         // Public book browsing
                         .requestMatchers("/books", "/books/**", "/books/search").permitAll()
